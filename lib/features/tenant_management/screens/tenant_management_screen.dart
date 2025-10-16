@@ -7,6 +7,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/models/tenant.dart';
+import '../../../core/utils/responsive.dart';
 import '../widgets/tenant_create_dialog.dart';
 import '../widgets/tenant_edit_dialog.dart';
 import '../widgets/tenant_details_dialog.dart';
@@ -20,8 +21,11 @@ class TenantManagementScreen extends StatefulWidget {
   State<TenantManagementScreen> createState() => _TenantManagementScreenState();
 }
 
-class _TenantManagementScreenState extends State<TenantManagementScreen> {
+class _TenantManagementScreenState extends State<TenantManagementScreen> 
+    with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  
   List<Tenant> _tenants = [];
   List<Tenant> _filteredTenants = [];
   Set<String> _selectedTenants = {};
@@ -29,12 +33,10 @@ class _TenantManagementScreenState extends State<TenantManagementScreen> {
   bool _isLoadingMore = false;
   String? _error;
   
-  // Pagination
   int _currentPage = 1;
   final int _pageSize = 20;
   bool _hasMoreData = true;
   
-  // Filters
   bool _includeInactive = false;
   String _selectedSchoolType = 'All';
   String _sortBy = 'school_name';
@@ -42,17 +44,49 @@ class _TenantManagementScreenState extends State<TenantManagementScreen> {
   
   final List<String> _schoolTypes = ['All', 'K-12', 'Elementary', 'Middle School', 'High School', 'University'];
 
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
   @override
   void initState() {
     super.initState();
+    _setupAnimations();
     _loadTenants();
     _searchController.addListener(_filterTenants);
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
+    _animationController.dispose();
     super.dispose();
+  }
+
+  void _setupAnimations() {
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+    ));
+    
+    _animationController.forward();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 100) {
+      if (_hasMoreData && !_isLoadingMore) {
+        _loadTenants();
+      }
+    }
   }
 
   Future<void> _loadTenants({bool refresh = false}) async {
@@ -151,7 +185,6 @@ class _TenantManagementScreenState extends State<TenantManagementScreen> {
       return matchesSearch && matchesType;
     }).toList();
 
-    // Apply sorting
     filtered.sort((a, b) {
       int comparison = 0;
       switch (_sortBy) {
@@ -187,24 +220,14 @@ class _TenantManagementScreenState extends State<TenantManagementScreen> {
       if (response.statusCode == 200) {
         await _loadTenants(refresh: true);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(hardDelete ? 'Tenant permanently deleted' : 'Tenant deactivated'),
-              backgroundColor: AppTheme.primaryGreen,
-            ),
-          );
+          _showSuccessSnackBar(hardDelete ? 'Tenant permanently deleted' : 'Tenant deactivated');
         }
       } else {
         throw Exception('Failed to delete tenant');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showErrorSnackBar('Error: $e');
       }
     }
   }
@@ -217,31 +240,70 @@ class _TenantManagementScreenState extends State<TenantManagementScreen> {
       if (response.statusCode == 200) {
         await _loadTenants(refresh: true);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Tenant reactivated successfully'),
-              backgroundColor: AppTheme.primaryGreen,
-            ),
-          );
+          _showSuccessSnackBar('Tenant reactivated successfully');
         }
       } else {
         throw Exception('Failed to reactivate tenant');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showErrorSnackBar('Error: $e');
       }
     }
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle, color: Colors.white, size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: AppTheme.bodySmall.copyWith(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: AppTheme.borderRadius6),
+        margin: const EdgeInsets.all(8),
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, color: Colors.white, size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: AppTheme.bodySmall.copyWith(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppTheme.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: AppTheme.borderRadius6),
+        margin: const EdgeInsets.all(8),
+      ),
+    );
   }
 
   void _showCreateDialog() {
     showDialog(
       context: context,
+      barrierColor: AppTheme.surfaceOverlay,
       builder: (context) => TenantCreateDialog(
         onTenantCreated: () => _loadTenants(refresh: true),
       ),
@@ -251,6 +313,7 @@ class _TenantManagementScreenState extends State<TenantManagementScreen> {
   void _showEditDialog(Tenant tenant) {
     showDialog(
       context: context,
+      barrierColor: AppTheme.surfaceOverlay,
       builder: (context) => TenantEditDialog(
         tenant: tenant,
         onTenantUpdated: () => _loadTenants(refresh: true),
@@ -261,6 +324,7 @@ class _TenantManagementScreenState extends State<TenantManagementScreen> {
   void _showDetailsDialog(Tenant tenant) {
     showDialog(
       context: context,
+      barrierColor: AppTheme.surfaceOverlay,
       builder: (context) => TenantDetailsDialog(tenant: tenant),
     );
   }
@@ -268,6 +332,7 @@ class _TenantManagementScreenState extends State<TenantManagementScreen> {
   void _showStatsDialog(Tenant tenant) {
     showDialog(
       context: context,
+      barrierColor: AppTheme.surfaceOverlay,
       builder: (context) => stats.TenantStatsDialog(tenant: tenant),
     );
   }
@@ -275,6 +340,7 @@ class _TenantManagementScreenState extends State<TenantManagementScreen> {
   void _showBulkOperationsDialog() {
     showDialog(
       context: context,
+      barrierColor: AppTheme.surfaceOverlay,
       builder: (context) => BulkOperationsDialog(
         selectedTenantIds: _selectedTenants.toList(),
         onOperationComplete: () {
@@ -287,159 +353,192 @@ class _TenantManagementScreenState extends State<TenantManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeader(),
-        const SizedBox(height: 16),
-        _buildFiltersAndSearch(),
-        const SizedBox(height: 16),
-        _buildBulkActions(),
-        const SizedBox(height: 16),
-        _buildContent(),
-      ],
+    // Get screen dimensions for proper sizing
+    final screenSize = MediaQuery.of(context).size;
+    final statusBarHeight = MediaQuery.of(context).padding.top;
+    final availableHeight = screenSize.height - statusBarHeight;
+    
+    return Material(
+      color: AppTheme.backgroundPrimary,
+      child: SafeArea(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: SizedBox(
+            width: screenSize.width,
+            height: availableHeight,
+            child: CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                // Fixed Header
+                SliverToBoxAdapter(
+                  child: _buildHeader(),
+                ),
+                
+                // Fixed Controls
+                SliverToBoxAdapter(
+                  child: _buildFiltersAndSearch(),
+                ),
+                
+                SliverToBoxAdapter(
+                  child: _buildBulkActions(),
+                ),
+                
+                // Content
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: availableHeight - 140, // Reserve space for fixed elements
+                    child: _buildContent(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildHeader() {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Tenant Management',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+    return Container(
+      width: double.infinity,
+      height: 60,
+      padding: const EdgeInsets.all(8),
+      decoration: const BoxDecoration(
+        gradient: AppTheme.primaryGradient,
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Tenant Management',
+                  style: AppTheme.headingSmall.copyWith(color: Colors.white),
                 ),
-              ),
-              Text(
-                'Manage schools and educational institutions',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 16,
+                Text(
+                  'Manage schools and institutions',
+                  style: AppTheme.bodyMicro.copyWith(color: Colors.white70),
                 ),
+              ],
+            ),
+          ),
+          InkWell(
+            onTap: _showCreateDialog,
+            borderRadius: AppTheme.borderRadius6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: AppTheme.borderRadius6,
+                border: Border.all(color: Colors.white.withOpacity(0.2)),
               ),
-            ],
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.add, color: Colors.white, size: 12),
+                  const SizedBox(width: 2),
+                  Text(
+                    'Add School',
+                    style: AppTheme.bodyMicro.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-        ElevatedButton.icon(
-          onPressed: _showCreateDialog,
-          icon: const Icon(Icons.add),
-          label: const Text('Add School'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primaryGreen,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildFiltersAndSearch() {
-    return Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'Search schools, principals, or addresses...',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+    return Container(
+      height: 50,
+      padding: const EdgeInsets.all(8),
+      child: Column(
+        children: [
+          // Search Bar
+          SizedBox(
+            height: 32,
+            child: TextField(
+              controller: _searchController,
+              style: AppTheme.bodyMicro,
+              decoration: InputDecoration(
+                hintText: 'Search schools...',
+                hintStyle: AppTheme.bodyMicro.copyWith(color: AppTheme.neutral400),
+                prefixIcon: Icon(Icons.search, color: AppTheme.greenPrimary, size: 14),
+                border: OutlineInputBorder(
+                  borderRadius: AppTheme.borderRadius6,
+                  borderSide: BorderSide(color: AppTheme.neutral300, width: 0.5),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: AppTheme.borderRadius6,
+                  borderSide: BorderSide(color: AppTheme.neutral300, width: 0.5),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: AppTheme.borderRadius6,
+                  borderSide: BorderSide(color: AppTheme.greenPrimary, width: 1),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                filled: true,
+                fillColor: Colors.white,
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 16),
-        DropdownButton<String>(
-          value: _selectedSchoolType,
-          items: _schoolTypes.map((type) {
-            return DropdownMenuItem(value: type, child: Text(type));
-          }).toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedSchoolType = value!;
-            });
-            _filterTenants();
-          },
-        ),
-        const SizedBox(width: 16),
-        FilterChip(
-          label: Text(_includeInactive ? 'Show All' : 'Active Only'),
-          selected: _includeInactive,
-          onSelected: (selected) {
-            setState(() {
-              _includeInactive = selected;
-            });
-            _loadTenants(refresh: true);
-          },
-          selectedColor: AppTheme.lightGreen,
-        ),
-        const SizedBox(width: 16),
-        PopupMenuButton<String>(
-          icon: const Icon(Icons.sort),
-          onSelected: (value) {
-            setState(() {
-              if (_sortBy == value) {
-                _sortAscending = !_sortAscending;
-              } else {
-                _sortBy = value;
-                _sortAscending = true;
-              }
-            });
-            _filterTenants();
-          },
-          itemBuilder: (context) => <PopupMenuEntry<String>>[
-            const PopupMenuItem<String>(value: 'school_name', child: Text('Sort by Name')),
-            const PopupMenuItem<String>(value: 'created_at', child: Text('Sort by Date')),
-            const PopupMenuItem<String>(value: 'total_students', child: Text('Sort by Students')),
-            const PopupMenuItem<String>(value: 'capacity_utilization', child: Text('Sort by Capacity')),
-          ],
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildBulkActions() {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      height: _selectedTenants.isNotEmpty ? 56 : 0,
+      duration: const Duration(milliseconds: 200),
+      height: _selectedTenants.isNotEmpty ? 30 : 0,
+      margin: const EdgeInsets.symmetric(horizontal: 8),
       child: _selectedTenants.isNotEmpty
           ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppTheme.lightGreen.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppTheme.lightGreen),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: AppTheme.getMicroDecoration(
+                color: AppTheme.green50,
+                border: Border.all(color: AppTheme.greenPrimary.withOpacity(0.3)),
               ),
               child: Row(
                 children: [
+                  Icon(Icons.checklist, size: 12, color: AppTheme.greenPrimary),
+                  const SizedBox(width: 4),
                   Text(
                     '${_selectedTenants.length} selected',
-                    style: TextStyle(
+                    style: AppTheme.bodyMicro.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.primaryGreen,
+                      color: AppTheme.greenPrimary,
                     ),
                   ),
                   const Spacer(),
-                  TextButton.icon(
+                  TextButton(
                     onPressed: () => setState(() => _selectedTenants.clear()),
-                    icon: const Icon(Icons.clear),
-                    label: const Text('Clear'),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    onPressed: _showBulkOperationsDialog,
-                    icon: const Icon(Icons.settings),
-                    label: const Text('Bulk Actions'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryGreen,
-                      foregroundColor: Colors.white,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
+                    child: Text('Clear', style: AppTheme.bodyMicro),
+                  ),
+                  ElevatedButton(
+                    onPressed: _showBulkOperationsDialog,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.greenPrimary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text('Actions', style: AppTheme.bodyMicro.copyWith(color: Colors.white)),
                   ),
                 ],
               ),
@@ -449,73 +548,114 @@ class _TenantManagementScreenState extends State<TenantManagementScreen> {
   }
 
   Widget _buildContent() {
-    return Expanded(
-      child: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? _buildErrorState()
-              : _filteredTenants.isEmpty
-                  ? _buildEmptyState()
-                  : _buildTenantsList(),
+    if (_isLoading) return _buildLoadingState();
+    if (_error != null) return _buildErrorState();
+    if (_filteredTenants.isEmpty) return _buildEmptyState();
+    return _buildTenantsList();
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(color: AppTheme.greenPrimary, strokeWidth: 2),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Loading tenants...',
+            style: AppTheme.bodyMicro.copyWith(color: AppTheme.neutral600),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildErrorState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
-          const SizedBox(height: 16),
-          Text(_error!),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => _loadTenants(refresh: true),
-            child: const Text('Retry'),
-          ),
-        ],
+      child: Container(
+        margin: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(12),
+        decoration: AppTheme.getMicroDecoration(
+          color: AppTheme.error.withOpacity(0.1),
+          border: Border.all(color: AppTheme.error.withOpacity(0.3)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, size: 24, color: AppTheme.error),
+            const SizedBox(height: 8),
+            Text(
+              'Failed to load tenants',
+              style: AppTheme.headingSmall.copyWith(color: AppTheme.error),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _error!,
+              style: AppTheme.bodyMicro.copyWith(color: AppTheme.neutral600),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: () => _loadTenants(refresh: true),
+              style: AppTheme.smallButtonStyle,
+              child: Text('Retry', style: AppTheme.bodyMicro.copyWith(color: Colors.white)),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.school_outlined, size: 80, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            'No schools found',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: Colors.grey[600],
+      child: Container(
+        margin: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(16),
+        decoration: AppTheme.getMicroDecoration(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.neutral100,
+                borderRadius: AppTheme.borderRadius10,
+              ),
+              child: Icon(Icons.school_outlined, size: 32, color: AppTheme.neutral400),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _searchController.text.isNotEmpty
-                ? 'Try adjusting your search terms'
-                : 'Start by adding your first school',
-            style: TextStyle(color: Colors.grey[500]),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: _showCreateDialog,
-            icon: const Icon(Icons.add),
-            label: const Text('Add School'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryGreen,
-              foregroundColor: Colors.white,
+            const SizedBox(height: 8),
+            Text(
+              'No schools found',
+              style: AppTheme.headingSmall.copyWith(color: AppTheme.neutral600),
             ),
-          ),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              _searchController.text.isNotEmpty
+                  ? 'Try adjusting your search'
+                  : 'Add your first school to get started',
+              style: AppTheme.bodyMicro.copyWith(color: AppTheme.neutral500),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: _showCreateDialog,
+              style: AppTheme.smallButtonStyle,
+              child: Text('Add School', style: AppTheme.bodyMicro.copyWith(color: Colors.white)),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildTenantsList() {
     return ListView.builder(
-      itemCount: _filteredTenants.length + (_hasMoreData ? 1 : 0),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      itemCount: _filteredTenants.length + (_isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == _filteredTenants.length) {
           return _buildLoadMoreWidget();
@@ -528,44 +668,56 @@ class _TenantManagementScreenState extends State<TenantManagementScreen> {
   }
 
   Widget _buildLoadMoreWidget() {
-    if (_isLoadingMore) {
-      return const Padding(
-        padding: EdgeInsets.all(16),
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-    
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: ElevatedButton(
-        onPressed: () => _loadTenants(),
-        child: const Text('Load More'),
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.all(8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 12,
+            height: 12,
+            child: CircularProgressIndicator(
+              color: AppTheme.greenPrimary,
+              strokeWidth: 2,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'Loading more...',
+            style: AppTheme.bodyMicro.copyWith(color: AppTheme.neutral600),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildTenantCard(Tenant tenant) {
     final bool isSelected = _selectedTenants.contains(tenant.id);
-    final bool isOverCapacity = tenant.isOverCapacity;
     
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: isSelected ? 4 : 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: isSelected 
-            ? BorderSide(color: AppTheme.primaryGreen, width: 2) 
-            : BorderSide.none,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header Row
-            Row(
-              children: [
-                Checkbox(
+    return Container(
+      height: 80,
+      margin: const EdgeInsets.only(bottom: 6),
+      child: InkWell(
+        onTap: () => _showDetailsDialog(tenant),
+        borderRadius: AppTheme.borderRadius8,
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: AppTheme.getMicroDecoration(
+            color: isSelected ? AppTheme.green50 : null,
+            border: Border.all(
+              color: isSelected 
+                  ? AppTheme.greenPrimary.withOpacity(0.5) 
+                  : AppTheme.neutral200.withOpacity(0.5),
+              width: isSelected ? 1 : 0.5,
+            ),
+          ),
+          child: Row(
+            children: [
+              // Selection checkbox
+              Transform.scale(
+                scale: 0.7,
+                child: Checkbox(
                   value: isSelected,
                   onChanged: (selected) {
                     setState(() {
@@ -576,131 +728,87 @@ class _TenantManagementScreenState extends State<TenantManagementScreen> {
                       }
                     });
                   },
-                  activeColor: AppTheme.primaryGreen,
+                  activeColor: AppTheme.greenPrimary,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: tenant.isActive 
-                        ? AppTheme.lightGreen.withOpacity(0.2) 
-                        : Colors.grey[200],
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(
-                    Icons.school,
-                    color: tenant.isActive ? AppTheme.primaryGreen : Colors.grey[600],
-                    size: 28,
-                  ),
+              ),
+              
+              // School icon
+              Container(
+                width: 18,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: tenant.isActive ? AppTheme.green50 : AppTheme.neutral100,
+                  borderRadius: AppTheme.borderRadius6,
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              tenant.schoolName,
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
+                child: Icon(
+                  Icons.school,
+                  color: tenant.isActive ? AppTheme.greenPrimary : AppTheme.neutral600,
+                  size: 12,
+                ),
+              ),
+              
+              const SizedBox(width: 6),
+              
+              // Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            tenant.schoolName,
+                            style: AppTheme.labelSmall.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.neutral900,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          _buildStatusChip(tenant),
-                          if (isOverCapacity) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.orange[100],
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                'Over Capacity',
-                                style: TextStyle(
-                                  color: Colors.orange[800],
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
+                        ),
+                        _buildStatusChip(tenant),
+                      ],
+                    ),
+                    Text(
+                      tenant.address,
+                      style: TextStyle(
+                        fontSize: 8,
+                        color: AppTheme.neutral600,
+                        fontFamily: AppTheme.interFontFamily,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        tenant.address,
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      'Principal: ${tenant.principalName}',
+                      style: TextStyle(
+                        fontSize: 8,
+                        color: AppTheme.neutral500,
+                        fontFamily: AppTheme.interFontFamily,
                       ),
-                      Text(
-                        'Principal: ${tenant.principalName}',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-                PopupMenuButton<String>(
-                  onSelected: (value) async {
-                    switch (value) {
-                      case 'details':
-                        _showDetailsDialog(tenant);
-                        break;
-                      case 'edit':
-                        _showEditDialog(tenant);
-                        break;
-                      case 'stats':
-                        _showStatsDialog(tenant);
-                        break;
-                      case 'deactivate':
-                        await _deleteTenant(tenant.id);
-                        break;
-                      case 'reactivate':
-                        await _reactivateTenant(tenant.id);
-                        break;
-                      case 'delete':
-                        final confirm = await _showDeleteConfirmation(tenant);
-                        if (confirm == true) {
-                          await _deleteTenant(tenant.id, hardDelete: true);
-                        }
-                        break;
-                    }
-                  },
-                  itemBuilder: (context) => <PopupMenuEntry<String>>[
-                    const PopupMenuItem<String>(value: 'details', child: Text('View Details')),
-                    const PopupMenuItem<String>(value: 'edit', child: Text('Edit')),
-                    const PopupMenuItem<String>(value: 'stats', child: Text('Statistics')),
-                    if (tenant.isActive)
-                      const PopupMenuItem<String>(value: 'deactivate', child: Text('Deactivate'))
-                    else
-                      const PopupMenuItem<String>(value: 'reactivate', child: Text('Reactivate')),
-                    const PopupMenuDivider(),
-                    const PopupMenuItem<String>(
-                      value: 'delete',
-                      child: Text('Delete Permanently', style: TextStyle(color: Colors.red)),
+                    ),
+                    const SizedBox(height: 4),
+                    // Stats Row
+                    Row(
+                      children: [
+                        _buildStatBadge('${tenant.totalStudents}', Icons.people, AppTheme.info),
+                        const SizedBox(width: 4),
+                        _buildStatBadge('${tenant.totalTeachers}', Icons.person, AppTheme.success),
+                        const SizedBox(width: 4),
+                        _buildStatBadge('${tenant.capacityUtilization.toStringAsFixed(1)}%', Icons.donut_small, AppTheme.warning),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // Stats Row
-            Row(
-              children: [
-                Expanded(child: _buildStatItem('Students', '${tenant.totalStudents}', Icons.people, Colors.blue)),
-                Container(width: 1, height: 40, color: Colors.grey[300]),
-                Expanded(child: _buildStatItem('Teachers', '${tenant.totalTeachers}', Icons.person_2, Colors.green)),
-                Container(width: 1, height: 40, color: Colors.grey[300]),
-                Expanded(child: _buildStatItem('Capacity', '${tenant.capacityUtilization.toStringAsFixed(1)}%', Icons.donut_small, Colors.orange)),
-                Container(width: 1, height: 40, color: Colors.grey[300]),
-                Expanded(child: _buildStatItem('Type', tenant.schoolType, Icons.category, Colors.purple)),
-              ],
-            ),
-          ],
+              ),
+              
+              // Actions menu
+              _buildActionsMenu(tenant),
+            ],
+          ),
         ),
       ),
     );
@@ -708,40 +816,148 @@ class _TenantManagementScreenState extends State<TenantManagementScreen> {
 
   Widget _buildStatusChip(Tenant tenant) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
       decoration: BoxDecoration(
-        color: tenant.isActive ? Colors.green[100] : Colors.red[100],
-        borderRadius: BorderRadius.circular(16),
+        color: tenant.isActive ? AppTheme.success.withOpacity(0.1) : AppTheme.error.withOpacity(0.1),
+        borderRadius: AppTheme.borderRadius6,
+        border: Border.all(
+          color: tenant.isActive ? AppTheme.success.withOpacity(0.3) : AppTheme.error.withOpacity(0.3),
+          width: 0.5,
+        ),
       ),
       child: Text(
         tenant.statusText,
         style: TextStyle(
-          color: tenant.isActive ? Colors.green[700] : Colors.red[700],
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
+          fontSize: 7,
+          color: tenant.isActive ? AppTheme.success : AppTheme.error,
+          fontWeight: FontWeight.w600,
+          fontFamily: AppTheme.bauhausFontFamily,
         ),
       ),
     );
   }
 
-  Widget _buildStatItem(String label, String value, IconData icon, Color color) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 20),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: color,
+  Widget _buildStatBadge(String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: AppTheme.borderRadius6,
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 0.5,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 8),
+          const SizedBox(width: 2),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 7,
+              fontWeight: FontWeight.bold,
+              color: color,
+              fontFamily: AppTheme.bauhausFontFamily,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionsMenu(Tenant tenant) {
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.more_vert, size: 14, color: AppTheme.neutral600),
+      padding: const EdgeInsets.all(2),
+      onSelected: (value) async {
+        switch (value) {
+          case 'details':
+            _showDetailsDialog(tenant);
+            break;
+          case 'edit':
+            _showEditDialog(tenant);
+            break;
+          case 'stats':
+            _showStatsDialog(tenant);
+            break;
+          case 'deactivate':
+            await _deleteTenant(tenant.id);
+            break;
+          case 'reactivate':
+            await _reactivateTenant(tenant.id);
+            break;
+          case 'delete':
+            final confirm = await _showDeleteConfirmation(tenant);
+            if (confirm == true) {
+              await _deleteTenant(tenant.id, hardDelete: true);
+            }
+            break;
+        }
+      },
+      itemBuilder: (context) => <PopupMenuEntry<String>>[
+        PopupMenuItem(
+          value: 'details',
+          child: Row(
+            children: [
+              Icon(Icons.visibility, size: 12, color: AppTheme.info),
+              const SizedBox(width: 4),
+              Text('Details', style: AppTheme.bodyMicro),
+            ],
           ),
         ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.grey[600],
+        PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 12, color: AppTheme.warning),
+              const SizedBox(width: 4),
+              Text('Edit', style: AppTheme.bodyMicro),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'stats',
+          child: Row(
+            children: [
+              Icon(Icons.analytics, size: 12, color: AppTheme.greenPrimary),
+              const SizedBox(width: 4),
+              Text('Stats', style: AppTheme.bodyMicro),
+            ],
+          ),
+        ),
+        if (tenant.isActive)
+          PopupMenuItem(
+            value: 'deactivate',
+            child: Row(
+              children: [
+                Icon(Icons.visibility_off, size: 12, color: AppTheme.neutral600),
+                const SizedBox(width: 4),
+                Text('Deactivate', style: AppTheme.bodyMicro),
+              ],
+            ),
+          )
+        else
+          PopupMenuItem(
+            value: 'reactivate',
+            child: Row(
+              children: [
+                Icon(Icons.visibility, size: 12, color: AppTheme.success),
+                const SizedBox(width: 4),
+                Text('Reactivate', style: AppTheme.bodyMicro),
+              ],
+            ),
+          ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete_forever, size: 12, color: AppTheme.error),
+              const SizedBox(width: 4),
+              Text('Delete', style: AppTheme.bodyMicro.copyWith(color: AppTheme.error)),
+            ],
           ),
         ),
       ],
@@ -751,31 +967,53 @@ class _TenantManagementScreenState extends State<TenantManagementScreen> {
   Future<bool?> _showDeleteConfirmation(Tenant tenant) {
     return showDialog<bool>(
       context: context,
+      barrierColor: AppTheme.surfaceOverlay,
       builder: (context) => AlertDialog(
-        title: const Text('Confirm Deletion'),
+        contentPadding: const EdgeInsets.all(16),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Are you sure you want to permanently delete "${tenant.schoolName}"?'),
+            Icon(Icons.warning, size: 20, color: AppTheme.error),
             const SizedBox(height: 8),
-            const Text(
-              'This action cannot be undone and will remove all associated data.',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
+            Text(
+              'Confirm Deletion',
+              style: AppTheme.labelMedium.copyWith(color: AppTheme.error),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Delete "${tenant.schoolName}"?',
+              style: AppTheme.bodyMicro.copyWith(color: AppTheme.neutral700),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text('Cancel', style: AppTheme.bodyMicro),
+                  ),
+                ),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.error,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text(
+                      'Delete',
+                      style: AppTheme.bodyMicro.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
       ),
     );
   }

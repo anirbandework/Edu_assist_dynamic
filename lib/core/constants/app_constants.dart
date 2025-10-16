@@ -2,7 +2,7 @@
 class AppConstants {
   // API Configuration
   static const String apiBaseUrl = 'http://192.168.1.2:8000';
-  static const String apiVersion = '/api/v1';
+  // static const String apiVersion = '/api/v1';
 
   // Public Routes
   static const String homeRoute = '/';
@@ -24,6 +24,7 @@ class AppConstants {
   static const String studentAttendanceRoute = '/student/attendance';
   static const String studentTimetableRoute = '/student/timetable';
   static const String studentProfileRoute = '/student/profile';
+  static const String studentNotificationsRoute = '/student/notifications';
   
   // Teacher Routes
   static const String teacherDashboardRoute = '/teacher/dashboard';
@@ -34,6 +35,8 @@ class AppConstants {
   static const String teacherGradesRoute = '/teacher/grades';
   static const String teacherReportsRoute = '/teacher/reports';
   static const String teacherProfileRoute = '/teacher/profile';
+  static const String teacherNotificationsRoute = '/teacher/notifications';
+  static const String teacherSendNotificationRoute = '/teacher/send-notification';
   
   // Admin Routes (School-level)
   static const String adminDashboardRoute = '/admin/dashboard';
@@ -44,5 +47,8 @@ class AppConstants {
   static const String adminReportsRoute = '/admin/reports';
   static const String adminSettingsRoute = '/admin/settings';
   static const String adminProfileRoute = '/admin/profile';
+  static const String adminNotificationsRoute = '/admin/notifications';
+  static const String adminSendNotificationRoute = '/admin/send-notification';
+  static const String adminNotificationAnalyticsRoute = '/admin/notification-analytics';
   static const String adminTenantManagementRoute = '/admin/tenant-management';
 }

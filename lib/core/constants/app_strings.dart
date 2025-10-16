@@ -19,6 +19,7 @@ class AppStrings {
   static const String dashboard = 'Dashboard';
   static const String profile = 'Profile';
   static const String settings = 'Settings';
+  static const String notifications = 'Notifications';
   
   // Student Specific
   static const String assignments = 'Assignments';
@@ -30,11 +31,13 @@ class AppStrings {
   static const String classes = 'Classes';
   static const String students = 'Students';
   static const String reports = 'Reports';
+  static const String sendNotification = 'Send Notification';
   
   // Admin/School Authority Specific
   static const String schools = 'Schools';
   static const String teachers = 'Teachers';
   static const String analytics = 'Analytics';
+  static const String notificationAnalytics = 'Notification Analytics';
   
   // Global/Tenant Management Specific
   static const String tenantManagement = 'Tenant Management';

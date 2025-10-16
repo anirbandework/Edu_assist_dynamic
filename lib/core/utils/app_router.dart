@@ -5,7 +5,9 @@ import '../../features/screens/landing_screen.dart';
 import '../../features/screens/school_selection_screen.dart';
 import '../../shared/widgets/main_layout.dart';
 
-import '../../features/tenant_management/screens/tenant_management_screen.dart'; 
+import '../../features/tenant_management/screens/tenant_management_screen.dart';
+import '../../features/notifications/screens/notifications_screen.dart';
+import '../../features/admin/screens/send_notification_screen.dart';
 
 import '../../features/student/screens/student_dashboard_screen.dart';
 import '../../features/student/screens/student_assignments_screen.dart';
@@ -13,6 +15,7 @@ import '../../features/student/screens/student_assignments_screen.dart';
 // import '../../features/student/screens/student_attendance_screen.dart';
 // import '../../features/student/screens/student_timetable_screen.dart';
 // import '../../features/student/screens/student_profile_screen.dart';
+
 import '../../features/teacher/screens/teacher_dashboard_screen.dart';
 import '../../features/teacher/screens/teacher_classes_screen.dart';
 // import '../../features/teacher/screens/teacher_students_screen.dart';
@@ -21,6 +24,7 @@ import '../../features/teacher/screens/teacher_classes_screen.dart';
 // import '../../features/teacher/screens/teacher_grades_screen.dart';
 // import '../../features/teacher/screens/teacher_reports_screen.dart';
 // import '../../features/teacher/screens/teacher_profile_screen.dart';
+
 import '../../features/admin/screens/admin_dashboard_screen.dart';
 import '../../features/admin/screens/admin_schools_screen.dart';
 // import '../../features/admin/screens/admin_teachers_screen.dart';
@@ -29,6 +33,7 @@ import '../../features/admin/screens/admin_schools_screen.dart';
 // import '../../features/admin/screens/admin_reports_screen.dart';
 // import '../../features/admin/screens/admin_settings_screen.dart';
 // import '../../features/admin/screens/admin_profile_screen.dart';
+
 import '../constants/app_constants.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -49,6 +54,7 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state, child) => MainLayout(
         userRole: state.uri.queryParameters['role'] ?? 'tenant_manager',
         tenantId: null, // Global users don't have a specific tenant
+        userId: state.uri.queryParameters['userId'],
         child: child,
       ),
       routes: [
@@ -73,12 +79,21 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state, child) => MainLayout(
         userRole: 'student',
         tenantId: state.uri.queryParameters['tenantId'],
+        userId: state.uri.queryParameters['userId'],
         child: child,
       ),
       routes: [
         GoRoute(
           path: AppConstants.studentDashboardRoute,
           builder: (context, state) => const StudentDashboardScreen(),
+        ),
+        GoRoute(
+          path: AppConstants.studentNotificationsRoute,
+          builder: (context, state) => NotificationsScreen(
+            userId: state.uri.queryParameters['userId'] ?? '',
+            userType: 'student',
+            tenantId: state.uri.queryParameters['tenantId'] ?? '',
+          ),
         ),
         GoRoute(
           path: AppConstants.studentAssignmentsRoute,
@@ -108,12 +123,29 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state, child) => MainLayout(
         userRole: 'teacher',
         tenantId: state.uri.queryParameters['tenantId'],
+        userId: state.uri.queryParameters['userId'],
         child: child,
       ),
       routes: [
         GoRoute(
           path: AppConstants.teacherDashboardRoute,
           builder: (context, state) => const TeacherDashboardScreen(),
+        ),
+        GoRoute(
+          path: AppConstants.teacherNotificationsRoute,
+          builder: (context, state) => NotificationsScreen(
+            userId: state.uri.queryParameters['userId'] ?? '',
+            userType: 'teacher',
+            tenantId: state.uri.queryParameters['tenantId'] ?? '',
+          ),
+        ),
+        GoRoute(
+          path: AppConstants.teacherSendNotificationRoute,
+          builder: (context, state) => SendNotificationScreen(
+            senderId: state.uri.queryParameters['userId'] ?? '',
+            senderType: 'teacher',
+            tenantId: state.uri.queryParameters['tenantId'] ?? '',
+          ),
         ),
         GoRoute(
           path: AppConstants.teacherClassesRoute,
@@ -151,12 +183,33 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state, child) => MainLayout(
         userRole: 'admin',
         tenantId: state.uri.queryParameters['tenantId'],
+        userId: state.uri.queryParameters['userId'],
         child: child,
       ),
       routes: [
         GoRoute(
           path: AppConstants.adminDashboardRoute,
           builder: (context, state) => const AdminDashboardScreen(),
+        ),
+        GoRoute(
+          path: AppConstants.adminNotificationsRoute,
+          builder: (context, state) => NotificationsScreen(
+            userId: state.uri.queryParameters['userId'] ?? '',
+            userType: 'school_authority',
+            tenantId: state.uri.queryParameters['tenantId'] ?? '',
+          ),
+        ),
+        GoRoute(
+          path: AppConstants.adminSendNotificationRoute,
+          builder: (context, state) => SendNotificationScreen(
+            senderId: state.uri.queryParameters['userId'] ?? '',
+            senderType: 'school_authority',
+            tenantId: state.uri.queryParameters['tenantId'] ?? '',
+          ),
+        ),
+        GoRoute(
+          path: AppConstants.adminNotificationAnalyticsRoute,
+          builder: (context, state) => _PlaceholderScreen(title: 'Notification Analytics'),
         ),
         GoRoute(
           path: AppConstants.adminSchoolsRoute,
@@ -199,11 +252,6 @@ class _PlaceholderScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        backgroundColor: Colors.indigo[600],
-        foregroundColor: Colors.white,
-      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
