@@ -14,28 +14,42 @@ class LandingScreen extends StatelessWidget {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: AppTheme.primaryGradient,
-        ),
+        decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
         child: SafeArea(
           child: ResponsiveContainer(
             maxWidth: context.responsive(ResponsiveSize.maxContentWidth),
-            child: Column(
-              children: [
-                const SizedBox(height: 30),
-                
-                _buildHeaderSection(context),
-                
-                const SizedBox(height: 40),
-                
-                _buildActionButtonsSection(context),
-                
-                const Spacer(),
-                
-                _buildFooterSection(context),
-                
-                const SizedBox(height: 16),
-              ],
+            child: SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight:
+                      MediaQuery.of(context).size.height -
+                      MediaQuery.of(context).padding.top,
+                ),
+                child: IntrinsicHeight(
+                  child: Column(
+                    children: [
+                      SizedBox(height: context.isMobile ? 30 : 20),
+
+                      _buildHeaderSection(context),
+
+                      SizedBox(height: context.isMobile ? 40 : 25),
+
+                      _buildActionButtonsSection(context),
+
+                      // Increased spacing here
+                      SizedBox(height: context.isMobile ? 150 : 45),
+
+                      _buildAboutSection(context),
+
+                      const Spacer(),
+
+                      _buildFooterSection(context),
+
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -47,7 +61,9 @@ class LandingScreen extends StatelessWidget {
     return Column(
       children: [
         Container(
-          padding: EdgeInsets.all(context.responsive(ResponsiveSize.paddingSmall) + 2),
+          padding: EdgeInsets.all(
+            context.responsive(ResponsiveSize.paddingSmall) + 2,
+          ),
           decoration: BoxDecoration(
             color: AppTheme.surfacePrimary,
             shape: BoxShape.circle,
@@ -105,6 +121,147 @@ class LandingScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildAboutSection(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.symmetric(
+        horizontal: context.responsive(ResponsiveSize.paddingSmall),
+      ),
+      decoration: AppTheme.getGlassDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: AppTheme.borderRadius12,
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+      ),
+      padding: EdgeInsets.all(context.isMobile ? 16 : 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: AppTheme.borderRadius8,
+                ),
+                child: Icon(
+                  Icons.info_outline,
+                  color: Colors.white,
+                  size: context.isMobile ? 16 : 14,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'About EduAssist',
+                style: AppTheme.labelMedium.copyWith(
+                  color: Colors.white,
+                  fontSize: context.isMobile ? 14 : 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+
+          SizedBox(height: context.isMobile ? 12 : 10),
+
+          Text(
+            'EduAssist is a comprehensive school management platform designed to streamline educational administration and enhance communication between schools, teachers, students, and parents.',
+            style: AppTheme.bodySmall.copyWith(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: context.isMobile ? 12 : 11,
+              height: 1.4,
+            ),
+          ),
+
+          SizedBox(height: context.isMobile ? 12 : 8),
+
+          // Feature highlights
+          ...[
+            _buildFeatureItem(
+              context,
+              Icons.assignment,
+              'Assignment & Grade Management',
+            ),
+            _buildFeatureItem(
+              context,
+              Icons.notifications_active,
+              'Real-time Notifications & Communication',
+            ),
+            _buildFeatureItem(
+              context,
+              Icons.analytics,
+              'Comprehensive Analytics & Reports',
+            ),
+            _buildFeatureItem(
+              context,
+              Icons.people,
+              'Multi-role Access (Students, Teachers, Admins)',
+            ),
+          ],
+
+          SizedBox(height: context.isMobile ? 10 : 6),
+
+          Container(
+            padding: EdgeInsets.all(context.isMobile ? 10 : 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: AppTheme.borderRadius8,
+              border: Border.all(color: Colors.white.withOpacity(0.2)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.security,
+                  color: Colors.white.withOpacity(0.8),
+                  size: context.isMobile ? 14 : 12,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Secure, scalable, and designed for modern educational institutions',
+                    style: AppTheme.bodySmall.copyWith(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: context.isMobile ? 11 : 10,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureItem(BuildContext context, IconData icon, String text) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: context.isMobile ? 6 : 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 2),
+            child: Icon(
+              icon,
+              color: Colors.white.withOpacity(0.7),
+              size: context.isMobile ? 14 : 12,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: AppTheme.bodySmall.copyWith(
+                color: Colors.white.withOpacity(0.8),
+                fontSize: context.isMobile ? 11 : 10,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionButton(
     BuildContext context, {
     required String title,
@@ -121,13 +278,19 @@ class LandingScreen extends StatelessWidget {
           onTap: onPressed,
           borderRadius: AppTheme.borderRadius10,
           child: Padding(
-            padding: EdgeInsets.all(context.responsive(ResponsiveSize.paddingSmall) + 2),
+            padding: EdgeInsets.all(
+              context.responsive(ResponsiveSize.paddingSmall) + 2,
+            ),
             child: Row(
               children: [
                 Container(
-                  padding: EdgeInsets.all(context.responsive(ResponsiveSize.paddingSmall) - 2),
+                  padding: EdgeInsets.all(
+                    context.responsive(ResponsiveSize.paddingSmall) - 2,
+                  ),
                   decoration: BoxDecoration(
-                    gradient: isPrimary ? AppTheme.primaryGradient : AppTheme.primaryGradientHover,
+                    gradient: isPrimary
+                        ? AppTheme.primaryGradient
+                        : AppTheme.primaryGradientHover,
                     borderRadius: AppTheme.borderRadius8,
                     boxShadow: const [AppTheme.cardShadow],
                   ),
@@ -137,7 +300,9 @@ class LandingScreen extends StatelessWidget {
                     size: context.responsive(ResponsiveSize.iconSmall) + 2,
                   ),
                 ),
-                SizedBox(width: context.responsive(ResponsiveSize.paddingSmall) + 2),
+                SizedBox(
+                  width: context.responsive(ResponsiveSize.paddingSmall) + 2,
+                ),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,23 +310,32 @@ class LandingScreen extends StatelessWidget {
                       Text(
                         title,
                         style: AppTheme.labelMedium.copyWith(
-                          fontSize: context.responsive(ResponsiveSize.bodyMedium),
+                          fontSize: context.responsive(
+                            ResponsiveSize.bodyMedium,
+                          ),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(height: context.responsive(ResponsiveSize.paddingSmall) / 3),
+                      SizedBox(
+                        height:
+                            context.responsive(ResponsiveSize.paddingSmall) / 3,
+                      ),
                       Text(
                         subtitle,
                         style: AppTheme.bodySmall.copyWith(
                           color: AppTheme.neutral600,
-                          fontSize: context.responsive(ResponsiveSize.bodySmall),
+                          fontSize: context.responsive(
+                            ResponsiveSize.bodySmall,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: EdgeInsets.all(context.responsive(ResponsiveSize.paddingSmall) - 2),
+                  padding: EdgeInsets.all(
+                    context.responsive(ResponsiveSize.paddingSmall) - 2,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.green50,
                     borderRadius: AppTheme.borderRadius6,
@@ -203,12 +377,16 @@ class LandingScreen extends StatelessWidget {
           decoration: AppTheme.getGlassDecoration(
             borderRadius: AppTheme.borderRadius16,
           ),
-          padding: EdgeInsets.all(context.responsive(ResponsiveSize.paddingMedium) + 2),
+          padding: EdgeInsets.all(
+            context.responsive(ResponsiveSize.paddingMedium) + 2,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: EdgeInsets.all(context.responsive(ResponsiveSize.paddingSmall) + 2),
+                padding: EdgeInsets.all(
+                  context.responsive(ResponsiveSize.paddingSmall) + 2,
+                ),
                 decoration: BoxDecoration(
                   gradient: AppTheme.primaryGradient,
                   borderRadius: AppTheme.borderRadius12,
@@ -220,9 +398,11 @@ class LandingScreen extends StatelessWidget {
                   color: Colors.white,
                 ),
               ),
-              
-              SizedBox(height: context.responsive(ResponsiveSize.paddingSmall) + 2),
-              
+
+              SizedBox(
+                height: context.responsive(ResponsiveSize.paddingSmall) + 2,
+              ),
+
               Text(
                 'Admin Access',
                 style: AppTheme.headingSmall.copyWith(
@@ -231,9 +411,11 @@ class LandingScreen extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              
-              SizedBox(height: context.responsive(ResponsiveSize.paddingSmall) / 2),
-              
+
+              SizedBox(
+                height: context.responsive(ResponsiveSize.paddingSmall) / 2,
+              ),
+
               Text(
                 'Access the admin panel to manage schools and educational institutions',
                 style: AppTheme.bodySmall.copyWith(
@@ -242,30 +424,51 @@ class LandingScreen extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              
-              SizedBox(height: context.responsive(ResponsiveSize.paddingMedium)),
-              
-              context.isMobile 
-                ? Column(
-                    children: [
-                      _buildDialogButton(context, 'Cancel', () => Navigator.pop(context), false),
-                      const SizedBox(height: 8),
-                      _buildDialogButton(context, 'Access Panel', () {
-                        Navigator.pop(context);
-                        context.go(AppConstants.tenantManagementRoute);
-                      }, true),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      Expanded(child: _buildDialogButton(context, 'Cancel', () => Navigator.pop(context), false)),
-                      const SizedBox(width: 12),
-                      Expanded(child: _buildDialogButton(context, 'Access Panel', () {
-                        Navigator.pop(context);
-                        context.go(AppConstants.tenantManagementRoute);
-                      }, true)),
-                    ],
-                  ),
+
+              SizedBox(
+                height: context.responsive(ResponsiveSize.paddingMedium),
+              ),
+
+              context.isMobile
+                  ? Column(
+                      children: [
+                        _buildDialogButton(
+                          context,
+                          'Cancel',
+                          () => Navigator.pop(context),
+                          false,
+                        ),
+                        const SizedBox(height: 8),
+                        _buildDialogButton(context, 'Access Panel', () {
+                          Navigator.pop(context);
+                          context.go(AppConstants.tenantManagementRoute);
+                        }, true),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: _buildDialogButton(
+                            context,
+                            'Cancel',
+                            () => Navigator.pop(context),
+                            false,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildDialogButton(
+                            context,
+                            'Access Panel',
+                            () {
+                              Navigator.pop(context);
+                              context.go(AppConstants.tenantManagementRoute);
+                            },
+                            true,
+                          ),
+                        ),
+                      ],
+                    ),
             ],
           ),
         ),
@@ -273,7 +476,12 @@ class LandingScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDialogButton(BuildContext context, String text, VoidCallback onPressed, bool isPrimary) {
+  Widget _buildDialogButton(
+    BuildContext context,
+    String text,
+    VoidCallback onPressed,
+    bool isPrimary,
+  ) {
     if (isPrimary) {
       return Container(
         width: double.infinity,
