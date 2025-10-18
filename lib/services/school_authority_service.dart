@@ -1,4 +1,4 @@
-// lib/features/services/authority_service.dart
+// lib/features/services/school_authority_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../core/constants/app_constants.dart';

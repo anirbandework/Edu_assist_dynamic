@@ -308,35 +308,33 @@ class _MainLayoutState extends State<MainLayout>
     );
   }
 
-  Widget _buildConstrainedContent() {
-    // Calculate available height
-    final screenHeight = MediaQuery.of(context).size.height;
-    final safeAreaHeight = MediaQuery.of(context).padding.top + MediaQuery.of(context).padding.bottom;
-    final headerHeight = 48;
-    final breadcrumbHeight = widget.showBreadcrumbs && widget.breadcrumbs != null ? 28 : 0;
-    final availableHeight = screenHeight - safeAreaHeight - headerHeight - breadcrumbHeight;
+Widget _buildConstrainedContent() {
+  final screenHeight = MediaQuery.of(context).size.height;
+  final safe = MediaQuery.of(context).padding.top + MediaQuery.of(context).padding.bottom;
+  final headerH = 48;
+  final crumbH = widget.showBreadcrumbs && widget.breadcrumbs != null ? 28 : 0;
+  final availableHeight = screenHeight - safe - headerH - crumbH;
 
-    if (widget.isScrollable) {
-      return ListView(
-        padding: const EdgeInsets.all(8),
-        children: [
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: availableHeight - 16,
+  return FocusTraversalGroup( // avoids _RenderTheater focus before layout
+    child: CustomScrollView(
+      primary: false, // don't auto-attach focus/scroll controller
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.all(8),
+          sliver: SliverFillRemaining(
+            hasScrollBody: true,
+            child: SizedBox(
+              height: availableHeight,
+              child: widget.child,
             ),
-            child: widget.child,
           ),
-        ],
-      );
-    } else {
-      return Container(
-        width: double.infinity,
-        height: availableHeight,
-        padding: const EdgeInsets.all(8),
-        child: widget.child,
-      );
-    }
-  }
+        ),
+      ],
+    ),
+  );
+}
+
+
 
   bool _shouldShowFAB() {
     // Show floating menu button based on user role
@@ -598,7 +596,7 @@ class MicroMainLayout extends StatelessWidget {
                     height: 20,
                     decoration: AppTheme.getMicroDecoration(
                       color: Colors.white,
-                      borderRadius: AppTheme.borderRadius6,
+                      borderRadius: AppTheme.borderRadius8,
                     ),
                     child: Center(
                       child: Text(

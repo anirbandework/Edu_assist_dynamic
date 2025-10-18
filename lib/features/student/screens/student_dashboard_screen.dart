@@ -461,7 +461,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                       color: value.toLowerCase() == 'active' 
                           ? AppTheme.success.withOpacity(0.1)
                           : AppTheme.error.withOpacity(0.1),
-                      borderRadius: AppTheme.borderRadius6,
+                      borderRadius: AppTheme.borderRadius8,
                       border: Border.all(
                         color: value.toLowerCase() == 'active' 
                             ? AppTheme.success.withOpacity(0.3)

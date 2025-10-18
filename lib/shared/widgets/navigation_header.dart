@@ -148,7 +148,7 @@ class _NavigationHeaderState extends State<NavigationHeader>
   Widget _buildMenuButton(BuildContext context) {
     return InkWell(
       onTap: widget.onToggleSidebar,
-      borderRadius: AppTheme.borderRadius6,
+      borderRadius: AppTheme.borderRadius8,
       child: Container(
         padding: const EdgeInsets.all(6),
         decoration: AppTheme.getMicroDecoration(
@@ -173,7 +173,7 @@ class _NavigationHeaderState extends State<NavigationHeader>
           height: 24,
           decoration: AppTheme.getMicroDecoration(
             color: Colors.white,
-            borderRadius: AppTheme.borderRadius6,
+            borderRadius: AppTheme.borderRadius8,
           ),
           child: Center(
             child: Text(
@@ -206,7 +206,7 @@ class _NavigationHeaderState extends State<NavigationHeader>
       onTap: () {
         // Navigate to notifications
       },
-      borderRadius: AppTheme.borderRadius6,
+      borderRadius: AppTheme.borderRadius8,
       child: Container(
         padding: const EdgeInsets.all(6),
         decoration: AppTheme.getMicroDecoration(
@@ -276,7 +276,7 @@ class _NavigationHeaderState extends State<NavigationHeader>
             padding: const EdgeInsets.all(2),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.2),
-              borderRadius: AppTheme.borderRadius6,
+              borderRadius: AppTheme.borderRadius8,
             ),
             child: Icon(
               _isGlobalUser() ? Icons.public : Icons.school,

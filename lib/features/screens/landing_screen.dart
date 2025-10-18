@@ -276,7 +276,7 @@ class LandingScreen extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onPressed,
-          borderRadius: AppTheme.borderRadius10,
+          borderRadius: AppTheme.borderRadius12,
           child: Padding(
             padding: EdgeInsets.all(
               context.responsive(ResponsiveSize.paddingSmall) + 2,
@@ -338,7 +338,7 @@ class LandingScreen extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: AppTheme.green50,
-                    borderRadius: AppTheme.borderRadius6,
+                    borderRadius: AppTheme.borderRadius8,
                   ),
                   child: Icon(
                     Icons.arrow_forward_ios,

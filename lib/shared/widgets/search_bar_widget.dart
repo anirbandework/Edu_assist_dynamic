@@ -112,7 +112,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                   margin: const EdgeInsets.only(left: 6, right: 4), // Reduced margins
                   decoration: BoxDecoration(
                     color: _hasFocus ? AppTheme.greenPrimary : AppTheme.neutral300,
-                    borderRadius: AppTheme.borderRadius6, // Smaller radius
+                    borderRadius: AppTheme.borderRadius8, // Smaller radius
                   ),
                   child: Icon(
                     Icons.search,
@@ -185,7 +185,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
           color: Colors.transparent,
           child: InkWell(
             onTap: widget.enabled ? _clearText : null,
-            borderRadius: AppTheme.borderRadius6, // Smaller radius
+            borderRadius: AppTheme.borderRadius8, // Smaller radius
             child: Container(
               padding: const EdgeInsets.all(6), // Reduced padding
               child: Icon(
@@ -286,13 +286,13 @@ class AdvancedSearchBarWidget extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: enabled ? onFilterPressed : null,
-            borderRadius: AppTheme.borderRadius6, // Smaller radius
+            borderRadius: AppTheme.borderRadius8, // Smaller radius
             child: Container(
               padding: const EdgeInsets.all(6), // Reduced padding
               margin: const EdgeInsets.symmetric(horizontal: 2), // Reduced margin
               decoration: BoxDecoration(
                 color: AppTheme.greenPrimary.withOpacity(0.1),
-                borderRadius: AppTheme.borderRadius6,
+                borderRadius: AppTheme.borderRadius8,
               ),
               child: Icon(
                 Icons.tune,
@@ -312,13 +312,13 @@ class AdvancedSearchBarWidget extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             onTap: enabled ? onMicPressed : null,
-            borderRadius: AppTheme.borderRadius6, // Smaller radius
+            borderRadius: AppTheme.borderRadius8, // Smaller radius
             child: Container(
               padding: const EdgeInsets.all(6), // Reduced padding
               margin: const EdgeInsets.symmetric(horizontal: 2), // Reduced margin
               decoration: BoxDecoration(
                 color: AppTheme.info.withOpacity(0.1),
-                borderRadius: AppTheme.borderRadius6,
+                borderRadius: AppTheme.borderRadius8,
               ),
               child: Icon(
                 Icons.mic,

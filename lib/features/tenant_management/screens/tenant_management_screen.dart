@@ -44,8 +44,8 @@ class _TenantManagementScreenState extends State<TenantManagementScreen>
   
   final List<String> _schoolTypes = ['All', 'K-12', 'Elementary', 'Middle School', 'High School', 'University'];
 
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
+  AnimationController? _animationController;
+  Animation<double>? _fadeAnimation;
 
   @override
   void initState() {
@@ -60,7 +60,7 @@ class _TenantManagementScreenState extends State<TenantManagementScreen>
   void dispose() {
     _searchController.dispose();
     _scrollController.dispose();
-    _animationController.dispose();
+    _animationController?.dispose();
     super.dispose();
   }
 
@@ -74,11 +74,13 @@ class _TenantManagementScreenState extends State<TenantManagementScreen>
       begin: 0.0,
       end: 1.0,
     ).animate(CurvedAnimation(
-      parent: _animationController,
+      parent: _animationController!,
       curve: Curves.easeOut,
     ));
     
-    _animationController.forward();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _animationController?.forward();
+    });
   }
 
   void _onScroll() {
@@ -89,6 +91,7 @@ class _TenantManagementScreenState extends State<TenantManagementScreen>
     }
   }
 
+  // Keep all your API methods exactly the same...
   Future<void> _loadTenants({bool refresh = false}) async {
     if (!mounted) return;
 
@@ -258,19 +261,19 @@ class _TenantManagementScreenState extends State<TenantManagementScreen>
         content: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.check_circle, color: Colors.white, size: 16),
+            Icon(Icons.check_circle, color: Colors.white, size: 18),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 message,
-                style: AppTheme.bodySmall.copyWith(color: Colors.white),
+                style: TextStyle(color: Colors.white, fontSize: 13),
               ),
             ),
           ],
         ),
         backgroundColor: AppTheme.success,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: AppTheme.borderRadius6),
+        shape: RoundedRectangleBorder(borderRadius: AppTheme.borderRadius8),
         margin: const EdgeInsets.all(8),
       ),
     );
@@ -282,24 +285,765 @@ class _TenantManagementScreenState extends State<TenantManagementScreen>
         content: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, color: Colors.white, size: 16),
+            Icon(Icons.error_outline, color: Colors.white, size: 18),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 message,
-                style: AppTheme.bodySmall.copyWith(color: Colors.white),
+                style: TextStyle(color: Colors.white, fontSize: 13),
               ),
             ),
           ],
         ),
         backgroundColor: AppTheme.error,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: AppTheme.borderRadius6),
+        shape: RoundedRectangleBorder(borderRadius: AppTheme.borderRadius8),
         margin: const EdgeInsets.all(8),
       ),
     );
   }
 
+  @override
+  Widget build(BuildContext context) {
+    // Get exact screen dimensions to prevent infinite constraints
+    final screenSize = MediaQuery.of(context).size;
+    final statusBarHeight = MediaQuery.of(context).padding.top;
+    final availableHeight = screenSize.height - statusBarHeight;
+
+    if (_animationController == null || _fadeAnimation == null) {
+      return Container(
+        width: screenSize.width,
+        height: availableHeight,
+        color: AppTheme.backgroundPrimary,
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return Container(
+      width: screenSize.width,
+      height: availableHeight,
+      color: AppTheme.backgroundPrimary,
+      child: SafeArea(
+        child: FadeTransition(
+          opacity: _fadeAnimation!,
+          child: Column(
+            children: [
+              // Header Section - Compact
+              _buildHeader(),
+              // Search Section - Compact
+              _buildSearchSection(),
+              // Bulk Actions (if any selected)
+              if (_selectedTenants.isNotEmpty) _buildBulkActions(),
+              // Main Content - Takes remaining space
+              Expanded(
+                child: _buildContent(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        gradient: AppTheme.primaryGradient,
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Tenant Management',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20, // Compact but readable
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Manage schools and institutions',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14, // Compact
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _showCreateDialog(),
+              borderRadius: AppTheme.borderRadius12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: AppTheme.borderRadius12,
+                  border: Border.all(color: Colors.white.withOpacity(0.2)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add, color: Colors.white, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Add School',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(color: AppTheme.neutral200, width: 0.5),
+        ),
+      ),
+      child: TextField(
+        controller: _searchController,
+        style: TextStyle(fontSize: 15), // Compact but readable
+        decoration: InputDecoration(
+          hintText: 'Search schools by name, address, or principal...',
+          hintStyle: TextStyle(color: AppTheme.neutral400, fontSize: 14),
+          prefixIcon: Icon(Icons.search, color: AppTheme.greenPrimary, size: 20),
+          filled: true,
+          fillColor: AppTheme.neutral50,
+          border: OutlineInputBorder(
+            borderRadius: AppTheme.borderRadius12,
+            borderSide: BorderSide(color: AppTheme.neutral300, width: 1),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: AppTheme.borderRadius12,
+            borderSide: BorderSide(color: AppTheme.neutral300, width: 1),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: AppTheme.borderRadius12,
+            borderSide: BorderSide(color: AppTheme.greenPrimary, width: 2),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBulkActions() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
+      decoration: AppTheme.getCompactDecoration(
+        color: AppTheme.green50,
+        border: Border.all(color: AppTheme.greenPrimary.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.checklist, size: 20, color: AppTheme.greenPrimary),
+          const SizedBox(width: 8),
+          Text(
+            '${_selectedTenants.length} selected',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.greenPrimary,
+            ),
+          ),
+          const Spacer(),
+          TextButton(
+            onPressed: () => setState(() => _selectedTenants.clear()),
+            child: Text('Clear', style: TextStyle(fontSize: 13)),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: () => _showBulkOperationsDialog(),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.greenPrimary,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Actions', style: TextStyle(fontSize: 13, color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    if (_isLoading) return _buildLoadingState();
+    if (_error != null) return _buildErrorState();
+    if (_filteredTenants.isEmpty) return _buildEmptyState();
+    return _buildTenantsList();
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppTheme.greenPrimary.withOpacity(0.1),
+              borderRadius: AppTheme.borderRadius12,
+            ),
+            child: const CircularProgressIndicator(
+              color: AppTheme.greenPrimary,
+              strokeWidth: 3,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Loading schools...',
+            style: TextStyle(
+              color: AppTheme.neutral600,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
+        decoration: AppTheme.getCompactDecoration(
+          color: AppTheme.error.withOpacity(0.1),
+          border: Border.all(color: AppTheme.error.withOpacity(0.3)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.error.withOpacity(0.1),
+                borderRadius: AppTheme.borderRadius12,
+              ),
+              child: Icon(Icons.error_outline, size: 40, color: AppTheme.error),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load tenants',
+              style: TextStyle(
+                color: AppTheme.error,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _error!,
+              style: TextStyle(
+                color: AppTheme.neutral600,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => _loadTenants(refresh: true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.greenPrimary,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.refresh, size: 18, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Try Again',
+                    style: TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
+        decoration: AppTheme.getCompactDecoration(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppTheme.neutral100,
+                borderRadius: AppTheme.borderRadius12,
+              ),
+              child: Icon(Icons.school_outlined, size: 48, color: AppTheme.neutral400),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No schools found',
+              style: TextStyle(
+                color: AppTheme.neutral600,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _searchController.text.isNotEmpty
+                  ? 'Try adjusting your search terms or clear the search.'
+                  : 'Add your first school to get started.',
+              style: TextStyle(
+                color: AppTheme.neutral500,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            if (_searchController.text.isNotEmpty)
+              TextButton(
+                onPressed: () {
+                  _searchController.clear();
+                  _filterTenants();
+                },
+                child: Text('Clear Search', style: TextStyle(fontSize: 14)),
+              )
+            else
+              ElevatedButton(
+                onPressed: () => _showCreateDialog(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.greenPrimary,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                ),
+                child: Text('Add School', style: TextStyle(color: Colors.white, fontSize: 14)),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTenantsList() {
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: _filteredTenants.length + (_isLoadingMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == _filteredTenants.length) {
+          return _buildLoadMoreWidget();
+        }
+        
+        final tenant = _filteredTenants[index];
+        return _buildTenantCard(tenant);
+      },
+    );
+  }
+
+  Widget _buildLoadMoreWidget() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              color: AppTheme.greenPrimary,
+              strokeWidth: 2,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Loading more...',
+            style: TextStyle(
+              color: AppTheme.neutral600,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTenantCard(Tenant tenant) {
+    final bool isSelected = _selectedTenants.contains(tenant.id);
+    final bool isInactive = !tenant.isActive;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _showDetailsDialog(tenant),
+          borderRadius: AppTheme.borderRadius12,
+          child: Container(
+            padding: const EdgeInsets.all(16), // Comfortable padding
+            decoration: AppTheme.getCompactDecoration(
+              color: isSelected 
+                  ? AppTheme.green50 
+                  : isInactive 
+                      ? AppTheme.neutral50.withOpacity(0.5)
+                      : AppTheme.surfacePrimary,
+              border: Border.all(
+                color: isSelected 
+                    ? AppTheme.greenPrimary.withOpacity(0.5)
+                    : isInactive 
+                        ? AppTheme.neutral300 
+                        : AppTheme.neutral200,
+                width: isSelected ? 1.5 : 1,
+              ),
+            ),
+            child: Opacity(
+              opacity: isInactive ? 0.6 : 1.0,
+              child: Row(
+                children: [
+                  // Selection checkbox
+                  Transform.scale(
+                    scale: 1.0,
+                    child: Checkbox(
+                      value: isSelected,
+                      onChanged: (selected) {
+                        setState(() {
+                          if (selected == true) {
+                            _selectedTenants.add(tenant.id);
+                          } else {
+                            _selectedTenants.remove(tenant.id);
+                          }
+                        });
+                      },
+                      activeColor: AppTheme.greenPrimary,
+                    ),
+                  ),
+                  
+                  const SizedBox(width: 12),
+                  
+                  // School icon
+                  Container(
+                    width: 48, // Balanced size
+                    height: 48,
+                    decoration: AppTheme.getCompactDecoration(
+                      color: isInactive ? AppTheme.neutral300 : AppTheme.green50,
+                      borderRadius: AppTheme.borderRadius12,
+                    ),
+                    child: Icon(
+                      Icons.school,
+                      size: 24, // Balanced icon size
+                      color: isInactive ? AppTheme.neutral600 : AppTheme.greenPrimary,
+                    ),
+                  ),
+                  
+                  const SizedBox(width: 16),
+                  
+                  // Content
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                tenant.schoolName,
+                                style: TextStyle(
+                                  fontSize: 16, // Comfortable reading size
+                                  fontWeight: FontWeight.bold,
+                                  color: isInactive ? AppTheme.neutral600 : AppTheme.neutral900,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (isInactive) _buildStatusChip(tenant),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          tenant.address,
+                          style: TextStyle(
+                            color: AppTheme.neutral600,
+                            fontSize: 13, // Compact but readable
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (tenant.principalName.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Principal: ${tenant.principalName}',
+                            style: TextStyle(
+                              color: AppTheme.neutral500,
+                              fontSize: 12, // Compact
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+                        // Stats Row
+                        Row(
+                          children: [
+                            _buildStatBadge('${tenant.totalStudents}', Icons.people, AppTheme.info),
+                            const SizedBox(width: 8),
+                            _buildStatBadge('${tenant.totalTeachers}', Icons.person, AppTheme.success),
+                            const SizedBox(width: 8),
+                            _buildStatBadge('${tenant.capacityUtilization.toStringAsFixed(1)}%', Icons.donut_small, AppTheme.warning),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(width: 12),
+                  
+                  // Actions menu
+                  _buildActionsMenu(tenant),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(Tenant tenant) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: tenant.isActive ? AppTheme.success.withOpacity(0.1) : AppTheme.error.withOpacity(0.1),
+        borderRadius: AppTheme.borderRadius8,
+        border: Border.all(
+          color: tenant.isActive ? AppTheme.success.withOpacity(0.3) : AppTheme.error.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        tenant.statusText,
+        style: TextStyle(
+          fontSize: 11, // Compact
+          color: tenant.isActive ? AppTheme.success : AppTheme.error,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatBadge(String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: AppTheme.borderRadius8,
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 14), // Balanced icon size
+          const SizedBox(width: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 11, // Compact but readable
+              fontWeight: FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionsMenu(Tenant tenant) {
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.more_vert, size: 20, color: AppTheme.neutral600),
+      padding: const EdgeInsets.all(4),
+      onSelected: (value) async {
+        switch (value) {
+          case 'details':
+            _showDetailsDialog(tenant);
+            break;
+          case 'edit':
+            _showEditDialog(tenant);
+            break;
+          case 'stats':
+            _showStatsDialog(tenant);
+            break;
+          case 'deactivate':
+            await _deleteTenant(tenant.id);
+            break;
+          case 'reactivate':
+            await _reactivateTenant(tenant.id);
+            break;
+          case 'delete':
+            final confirm = await _showDeleteConfirmation(tenant);
+            if (confirm == true) {
+              await _deleteTenant(tenant.id, hardDelete: true);
+            }
+            break;
+        }
+      },
+      itemBuilder: (context) => <PopupMenuEntry<String>>[
+        PopupMenuItem(
+          value: 'details',
+          child: Row(
+            children: [
+              Icon(Icons.visibility, size: 18, color: AppTheme.info),
+              const SizedBox(width: 12),
+              Text('Details', style: TextStyle(fontSize: 14)),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 18, color: AppTheme.warning),
+              const SizedBox(width: 12),
+              Text('Edit', style: TextStyle(fontSize: 14)),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'stats',
+          child: Row(
+            children: [
+              Icon(Icons.analytics, size: 18, color: AppTheme.greenPrimary),
+              const SizedBox(width: 12),
+              Text('Stats', style: TextStyle(fontSize: 14)),
+            ],
+          ),
+        ),
+        if (tenant.isActive)
+          PopupMenuItem(
+            value: 'deactivate',
+            child: Row(
+              children: [
+                Icon(Icons.visibility_off, size: 18, color: AppTheme.neutral600),
+                const SizedBox(width: 12),
+                Text('Deactivate', style: TextStyle(fontSize: 14)),
+              ],
+            ),
+          )
+        else
+          PopupMenuItem(
+            value: 'reactivate',
+            child: Row(
+              children: [
+                Icon(Icons.visibility, size: 18, color: AppTheme.success),
+                const SizedBox(width: 12),
+                Text('Reactivate', style: TextStyle(fontSize: 14)),
+              ],
+            ),
+          ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete_forever, size: 18, color: AppTheme.error),
+              const SizedBox(width: 12),
+              Text('Delete', style: TextStyle(fontSize: 14, color: AppTheme.error)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<bool?> _showDeleteConfirmation(Tenant tenant) {
+    return showDialog<bool>(
+      context: context,
+      barrierColor: AppTheme.surfaceOverlay,
+      builder: (context) => AlertDialog(
+        contentPadding: const EdgeInsets.all(24),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.warning, size: 40, color: AppTheme.error),
+            const SizedBox(height: 16),
+            Text(
+              'Confirm Deletion',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.error,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Delete "${tenant.schoolName}"?',
+              style: TextStyle(
+                fontSize: 15,
+                color: AppTheme.neutral700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text('Cancel', style: TextStyle(fontSize: 14)),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.error,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text(
+                      'Delete',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Keep all dialog methods exactly the same...
   void _showCreateDialog() {
     showDialog(
       context: context,
@@ -347,673 +1091,6 @@ class _TenantManagementScreenState extends State<TenantManagementScreen>
           _selectedTenants.clear();
           _loadTenants(refresh: true);
         },
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Get screen dimensions for proper sizing
-    final screenSize = MediaQuery.of(context).size;
-    final statusBarHeight = MediaQuery.of(context).padding.top;
-    final availableHeight = screenSize.height - statusBarHeight;
-    
-    return Material(
-      color: AppTheme.backgroundPrimary,
-      child: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SizedBox(
-            width: screenSize.width,
-            height: availableHeight,
-            child: CustomScrollView(
-              controller: _scrollController,
-              slivers: [
-                // Fixed Header
-                SliverToBoxAdapter(
-                  child: _buildHeader(),
-                ),
-                
-                // Fixed Controls
-                SliverToBoxAdapter(
-                  child: _buildFiltersAndSearch(),
-                ),
-                
-                SliverToBoxAdapter(
-                  child: _buildBulkActions(),
-                ),
-                
-                // Content
-                SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: availableHeight - 140, // Reserve space for fixed elements
-                    child: _buildContent(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      height: 60,
-      padding: const EdgeInsets.all(8),
-      decoration: const BoxDecoration(
-        gradient: AppTheme.primaryGradient,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Tenant Management',
-                  style: AppTheme.headingSmall.copyWith(color: Colors.white),
-                ),
-                Text(
-                  'Manage schools and institutions',
-                  style: AppTheme.bodyMicro.copyWith(color: Colors.white70),
-                ),
-              ],
-            ),
-          ),
-          InkWell(
-            onTap: _showCreateDialog,
-            borderRadius: AppTheme.borderRadius6,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: AppTheme.borderRadius6,
-                border: Border.all(color: Colors.white.withOpacity(0.2)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.add, color: Colors.white, size: 12),
-                  const SizedBox(width: 2),
-                  Text(
-                    'Add School',
-                    style: AppTheme.bodyMicro.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFiltersAndSearch() {
-    return Container(
-      height: 50,
-      padding: const EdgeInsets.all(8),
-      child: Column(
-        children: [
-          // Search Bar
-          SizedBox(
-            height: 32,
-            child: TextField(
-              controller: _searchController,
-              style: AppTheme.bodyMicro,
-              decoration: InputDecoration(
-                hintText: 'Search schools...',
-                hintStyle: AppTheme.bodyMicro.copyWith(color: AppTheme.neutral400),
-                prefixIcon: Icon(Icons.search, color: AppTheme.greenPrimary, size: 14),
-                border: OutlineInputBorder(
-                  borderRadius: AppTheme.borderRadius6,
-                  borderSide: BorderSide(color: AppTheme.neutral300, width: 0.5),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: AppTheme.borderRadius6,
-                  borderSide: BorderSide(color: AppTheme.neutral300, width: 0.5),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: AppTheme.borderRadius6,
-                  borderSide: BorderSide(color: AppTheme.greenPrimary, width: 1),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBulkActions() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      height: _selectedTenants.isNotEmpty ? 30 : 0,
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      child: _selectedTenants.isNotEmpty
-          ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: AppTheme.getMicroDecoration(
-                color: AppTheme.green50,
-                border: Border.all(color: AppTheme.greenPrimary.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.checklist, size: 12, color: AppTheme.greenPrimary),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${_selectedTenants.length} selected',
-                    style: AppTheme.bodyMicro.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.greenPrimary,
-                    ),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () => setState(() => _selectedTenants.clear()),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: Text('Clear', style: AppTheme.bodyMicro),
-                  ),
-                  ElevatedButton(
-                    onPressed: _showBulkOperationsDialog,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.greenPrimary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: Text('Actions', style: AppTheme.bodyMicro.copyWith(color: Colors.white)),
-                  ),
-                ],
-              ),
-            )
-          : const SizedBox.shrink(),
-    );
-  }
-
-  Widget _buildContent() {
-    if (_isLoading) return _buildLoadingState();
-    if (_error != null) return _buildErrorState();
-    if (_filteredTenants.isEmpty) return _buildEmptyState();
-    return _buildTenantsList();
-  }
-
-  Widget _buildLoadingState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(color: AppTheme.greenPrimary, strokeWidth: 2),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Loading tenants...',
-            style: AppTheme.bodyMicro.copyWith(color: AppTheme.neutral600),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorState() {
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.all(8),
-        padding: const EdgeInsets.all(12),
-        decoration: AppTheme.getMicroDecoration(
-          color: AppTheme.error.withOpacity(0.1),
-          border: Border.all(color: AppTheme.error.withOpacity(0.3)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, size: 24, color: AppTheme.error),
-            const SizedBox(height: 8),
-            Text(
-              'Failed to load tenants',
-              style: AppTheme.headingSmall.copyWith(color: AppTheme.error),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              _error!,
-              style: AppTheme.bodyMicro.copyWith(color: AppTheme.neutral600),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: () => _loadTenants(refresh: true),
-              style: AppTheme.smallButtonStyle,
-              child: Text('Retry', style: AppTheme.bodyMicro.copyWith(color: Colors.white)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.all(8),
-        padding: const EdgeInsets.all(16),
-        decoration: AppTheme.getMicroDecoration(),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppTheme.neutral100,
-                borderRadius: AppTheme.borderRadius10,
-              ),
-              child: Icon(Icons.school_outlined, size: 32, color: AppTheme.neutral400),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'No schools found',
-              style: AppTheme.headingSmall.copyWith(color: AppTheme.neutral600),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _searchController.text.isNotEmpty
-                  ? 'Try adjusting your search'
-                  : 'Add your first school to get started',
-              style: AppTheme.bodyMicro.copyWith(color: AppTheme.neutral500),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: _showCreateDialog,
-              style: AppTheme.smallButtonStyle,
-              child: Text('Add School', style: AppTheme.bodyMicro.copyWith(color: Colors.white)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTenantsList() {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      itemCount: _filteredTenants.length + (_isLoadingMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == _filteredTenants.length) {
-          return _buildLoadMoreWidget();
-        }
-        
-        final tenant = _filteredTenants[index];
-        return _buildTenantCard(tenant);
-      },
-    );
-  }
-
-  Widget _buildLoadMoreWidget() {
-    return Container(
-      height: 40,
-      padding: const EdgeInsets.all(8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 12,
-            height: 12,
-            child: CircularProgressIndicator(
-              color: AppTheme.greenPrimary,
-              strokeWidth: 2,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            'Loading more...',
-            style: AppTheme.bodyMicro.copyWith(color: AppTheme.neutral600),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTenantCard(Tenant tenant) {
-    final bool isSelected = _selectedTenants.contains(tenant.id);
-    
-    return Container(
-      height: 80,
-      margin: const EdgeInsets.only(bottom: 6),
-      child: InkWell(
-        onTap: () => _showDetailsDialog(tenant),
-        borderRadius: AppTheme.borderRadius8,
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: AppTheme.getMicroDecoration(
-            color: isSelected ? AppTheme.green50 : null,
-            border: Border.all(
-              color: isSelected 
-                  ? AppTheme.greenPrimary.withOpacity(0.5) 
-                  : AppTheme.neutral200.withOpacity(0.5),
-              width: isSelected ? 1 : 0.5,
-            ),
-          ),
-          child: Row(
-            children: [
-              // Selection checkbox
-              Transform.scale(
-                scale: 0.7,
-                child: Checkbox(
-                  value: isSelected,
-                  onChanged: (selected) {
-                    setState(() {
-                      if (selected == true) {
-                        _selectedTenants.add(tenant.id);
-                      } else {
-                        _selectedTenants.remove(tenant.id);
-                      }
-                    });
-                  },
-                  activeColor: AppTheme.greenPrimary,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-              
-              // School icon
-              Container(
-                width: 18,
-                height: 18,
-                decoration: BoxDecoration(
-                  color: tenant.isActive ? AppTheme.green50 : AppTheme.neutral100,
-                  borderRadius: AppTheme.borderRadius6,
-                ),
-                child: Icon(
-                  Icons.school,
-                  color: tenant.isActive ? AppTheme.greenPrimary : AppTheme.neutral600,
-                  size: 12,
-                ),
-              ),
-              
-              const SizedBox(width: 6),
-              
-              // Content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            tenant.schoolName,
-                            style: AppTheme.labelSmall.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.neutral900,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        _buildStatusChip(tenant),
-                      ],
-                    ),
-                    Text(
-                      tenant.address,
-                      style: TextStyle(
-                        fontSize: 8,
-                        color: AppTheme.neutral600,
-                        fontFamily: AppTheme.interFontFamily,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      'Principal: ${tenant.principalName}',
-                      style: TextStyle(
-                        fontSize: 8,
-                        color: AppTheme.neutral500,
-                        fontFamily: AppTheme.interFontFamily,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    // Stats Row
-                    Row(
-                      children: [
-                        _buildStatBadge('${tenant.totalStudents}', Icons.people, AppTheme.info),
-                        const SizedBox(width: 4),
-                        _buildStatBadge('${tenant.totalTeachers}', Icons.person, AppTheme.success),
-                        const SizedBox(width: 4),
-                        _buildStatBadge('${tenant.capacityUtilization.toStringAsFixed(1)}%', Icons.donut_small, AppTheme.warning),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Actions menu
-              _buildActionsMenu(tenant),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusChip(Tenant tenant) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-      decoration: BoxDecoration(
-        color: tenant.isActive ? AppTheme.success.withOpacity(0.1) : AppTheme.error.withOpacity(0.1),
-        borderRadius: AppTheme.borderRadius6,
-        border: Border.all(
-          color: tenant.isActive ? AppTheme.success.withOpacity(0.3) : AppTheme.error.withOpacity(0.3),
-          width: 0.5,
-        ),
-      ),
-      child: Text(
-        tenant.statusText,
-        style: TextStyle(
-          fontSize: 7,
-          color: tenant.isActive ? AppTheme.success : AppTheme.error,
-          fontWeight: FontWeight.w600,
-          fontFamily: AppTheme.bauhausFontFamily,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatBadge(String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: AppTheme.borderRadius6,
-        border: Border.all(
-          color: color.withOpacity(0.2),
-          width: 0.5,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 8),
-          const SizedBox(width: 2),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 7,
-              fontWeight: FontWeight.bold,
-              color: color,
-              fontFamily: AppTheme.bauhausFontFamily,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionsMenu(Tenant tenant) {
-    return PopupMenuButton<String>(
-      icon: Icon(Icons.more_vert, size: 14, color: AppTheme.neutral600),
-      padding: const EdgeInsets.all(2),
-      onSelected: (value) async {
-        switch (value) {
-          case 'details':
-            _showDetailsDialog(tenant);
-            break;
-          case 'edit':
-            _showEditDialog(tenant);
-            break;
-          case 'stats':
-            _showStatsDialog(tenant);
-            break;
-          case 'deactivate':
-            await _deleteTenant(tenant.id);
-            break;
-          case 'reactivate':
-            await _reactivateTenant(tenant.id);
-            break;
-          case 'delete':
-            final confirm = await _showDeleteConfirmation(tenant);
-            if (confirm == true) {
-              await _deleteTenant(tenant.id, hardDelete: true);
-            }
-            break;
-        }
-      },
-      itemBuilder: (context) => <PopupMenuEntry<String>>[
-        PopupMenuItem(
-          value: 'details',
-          child: Row(
-            children: [
-              Icon(Icons.visibility, size: 12, color: AppTheme.info),
-              const SizedBox(width: 4),
-              Text('Details', style: AppTheme.bodyMicro),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'edit',
-          child: Row(
-            children: [
-              Icon(Icons.edit, size: 12, color: AppTheme.warning),
-              const SizedBox(width: 4),
-              Text('Edit', style: AppTheme.bodyMicro),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'stats',
-          child: Row(
-            children: [
-              Icon(Icons.analytics, size: 12, color: AppTheme.greenPrimary),
-              const SizedBox(width: 4),
-              Text('Stats', style: AppTheme.bodyMicro),
-            ],
-          ),
-        ),
-        if (tenant.isActive)
-          PopupMenuItem(
-            value: 'deactivate',
-            child: Row(
-              children: [
-                Icon(Icons.visibility_off, size: 12, color: AppTheme.neutral600),
-                const SizedBox(width: 4),
-                Text('Deactivate', style: AppTheme.bodyMicro),
-              ],
-            ),
-          )
-        else
-          PopupMenuItem(
-            value: 'reactivate',
-            child: Row(
-              children: [
-                Icon(Icons.visibility, size: 12, color: AppTheme.success),
-                const SizedBox(width: 4),
-                Text('Reactivate', style: AppTheme.bodyMicro),
-              ],
-            ),
-          ),
-        const PopupMenuDivider(),
-        PopupMenuItem(
-          value: 'delete',
-          child: Row(
-            children: [
-              Icon(Icons.delete_forever, size: 12, color: AppTheme.error),
-              const SizedBox(width: 4),
-              Text('Delete', style: AppTheme.bodyMicro.copyWith(color: AppTheme.error)),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<bool?> _showDeleteConfirmation(Tenant tenant) {
-    return showDialog<bool>(
-      context: context,
-      barrierColor: AppTheme.surfaceOverlay,
-      builder: (context) => AlertDialog(
-        contentPadding: const EdgeInsets.all(16),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.warning, size: 20, color: AppTheme.error),
-            const SizedBox(height: 8),
-            Text(
-              'Confirm Deletion',
-              style: AppTheme.labelMedium.copyWith(color: AppTheme.error),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Delete "${tenant.schoolName}"?',
-              style: AppTheme.bodyMicro.copyWith(color: AppTheme.neutral700),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: Text('Cancel', style: AppTheme.bodyMicro),
-                  ),
-                ),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.error,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: Text(
-                      'Delete',
-                      style: AppTheme.bodyMicro.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }

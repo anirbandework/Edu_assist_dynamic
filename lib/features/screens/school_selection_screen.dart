@@ -331,7 +331,7 @@ class _SchoolSelectionScreenState extends State<SchoolSelectionScreen>
               padding: const EdgeInsets.all(12), // Reduced
               decoration: BoxDecoration(
                 color: AppTheme.error.withOpacity(0.1),
-                borderRadius: AppTheme.borderRadius10,
+                borderRadius: AppTheme.borderRadius12,
               ),
               child: Icon(
                 Icons.error_outline,
@@ -593,7 +593,7 @@ class _SchoolSelectionScreenState extends State<SchoolSelectionScreen>
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), // Reduced
                                 decoration: BoxDecoration(
                                   color: AppTheme.error.withOpacity(0.1),
-                                  borderRadius: AppTheme.borderRadius6,
+                                  borderRadius: AppTheme.borderRadius8,
                                   border: Border.all(color: AppTheme.error.withOpacity(0.3)),
                                 ),
                                 child: Text(
@@ -652,7 +652,7 @@ class _SchoolSelectionScreenState extends State<SchoolSelectionScreen>
                       padding: const EdgeInsets.all(6), // Reduced
                       decoration: BoxDecoration(
                         color: AppTheme.green50,
-                        borderRadius: AppTheme.borderRadius6,
+                        borderRadius: AppTheme.borderRadius8,
                       ),
                       child: Icon(
                         Icons.arrow_forward_ios,
@@ -675,7 +675,7 @@ class _SchoolSelectionScreenState extends State<SchoolSelectionScreen>
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3), // Reduced
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: AppTheme.borderRadius6,
+        borderRadius: AppTheme.borderRadius8,
         border: Border.all(
           color: color.withOpacity(0.3),
           width: 0.5,
@@ -718,7 +718,7 @@ class _SchoolSelectionScreenState extends State<SchoolSelectionScreen>
                 padding: const EdgeInsets.all(12), // Reduced
                 decoration: const BoxDecoration(
                   gradient: AppTheme.glassGreenGradient,
-                  borderRadius: AppTheme.borderRadius10,
+                  borderRadius: AppTheme.borderRadius12,
                 ),
                 child: Column(
                   children: [
@@ -742,7 +742,7 @@ class _SchoolSelectionScreenState extends State<SchoolSelectionScreen>
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // Reduced
                         decoration: BoxDecoration(
                           color: AppTheme.info.withOpacity(0.1),
-                          borderRadius: AppTheme.borderRadius6,
+                          borderRadius: AppTheme.borderRadius8,
                           border: Border.all(color: AppTheme.info.withOpacity(0.3)),
                         ),
                         child: Text(
@@ -828,7 +828,7 @@ class _SchoolSelectionScreenState extends State<SchoolSelectionScreen>
                 padding: const EdgeInsets.all(6), // Reduced
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
-                  borderRadius: AppTheme.borderRadius6,
+                  borderRadius: AppTheme.borderRadius8,
                 ),
                 child: Icon(
                   icon,
@@ -958,7 +958,7 @@ class _SchoolSelectionScreenState extends State<SchoolSelectionScreen>
                           padding: const EdgeInsets.all(6), // Reduced
                           decoration: BoxDecoration(
                             color: AppTheme.greenPrimary.withOpacity(0.1),
-                            borderRadius: AppTheme.borderRadius6,
+                            borderRadius: AppTheme.borderRadius8,
                           ),
                           child: Icon(
                             getRoleIcon(role),
