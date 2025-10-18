@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class AIService {
-  static const String _apiKey = 'AIzaSyAN9GPpCkpN-ttnmL8Ire0qUf6xZ9yiNqY'; // Replace with your API key
+  static const String _apiKey = 'YOUR KEY'; // Replace with your API key
   static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
   
   static const String _systemPrompt = '''
