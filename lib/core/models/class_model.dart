@@ -13,6 +13,12 @@ class ClassModel {
   final bool isActive;
   final int? availableSpots;
   final double? occupancyRate;
+  final String? createdBy;
+  final String? createdAt;
+  final String? lastModifiedBy;
+  final String? lastModifiedAt;
+  final List<Map<String, dynamic>>? timeSlots;
+  final Map<String, List<Map<String, dynamic>>>? weeklySchedule;
 
   const ClassModel({
     required this.id,
@@ -27,6 +33,12 @@ class ClassModel {
     this.classroom,
     this.availableSpots,
     this.occupancyRate,
+    this.createdBy,
+    this.createdAt,
+    this.lastModifiedBy,
+    this.lastModifiedAt,
+    this.timeSlots,
+    this.weeklySchedule,
   });
 
   factory ClassModel.fromJson(Map<String, dynamic> j) => ClassModel(
@@ -54,6 +66,14 @@ class ClassModel {
             : (j['occupancy_rate'] is num
                 ? (j['occupancy_rate'] as num).toDouble()
                 : double.tryParse(j['occupancy_rate'].toString())),
+        createdBy: j['created_by'],
+        createdAt: j['created_at'],
+        lastModifiedBy: j['last_modified_by'],
+        lastModifiedAt: j['last_modified_at'],
+        timeSlots: j['time_slots'] != null ? List<Map<String, dynamic>>.from(j['time_slots']) : null,
+        weeklySchedule: j['weekly_schedule'] != null ? Map<String, List<Map<String, dynamic>>>.from(
+          (j['weekly_schedule'] as Map).map((k, v) => MapEntry(k.toString(), List<Map<String, dynamic>>.from(v)))
+        ) : null,
       );
 
   Map<String, dynamic> toCreateJson() => {
@@ -66,6 +86,12 @@ class ClassModel {
         'current_students': currentStudents,
         'classroom': (classroom?.isEmpty ?? true) ? null : classroom,
         'is_active': isActive,
+        'created_by': createdBy,
+        'created_at': createdAt,
+        'last_modified_by': lastModifiedBy,
+        'last_modified_at': lastModifiedAt,
+        'time_slots': timeSlots,
+        'weekly_schedule': weeklySchedule,
       };
 
   Map<String, dynamic> toUpdateJson() => {
@@ -102,6 +128,12 @@ class ClassModel {
     int? currentStudents,
     String? classroom,
     bool? isActive,
+    String? createdBy,
+    String? createdAt,
+    String? lastModifiedBy,
+    String? lastModifiedAt,
+    List<Map<String, dynamic>>? timeSlots,
+    Map<String, List<Map<String, dynamic>>>? weeklySchedule,
   }) {
     return ClassModel(
       id: id,
@@ -116,6 +148,12 @@ class ClassModel {
       isActive: isActive ?? this.isActive,
       availableSpots: availableSpots,
       occupancyRate: occupancyRate,
+      createdBy: createdBy ?? this.createdBy,
+      createdAt: createdAt ?? this.createdAt,
+      lastModifiedBy: lastModifiedBy ?? this.lastModifiedBy,
+      lastModifiedAt: lastModifiedAt ?? this.lastModifiedAt,
+      timeSlots: timeSlots ?? this.timeSlots,
+      weeklySchedule: weeklySchedule ?? this.weeklySchedule,
     );
   }
 

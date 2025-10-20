@@ -3,6 +3,8 @@ import 'package:file_picker/file_picker.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../services/class_service.dart';
+import '../../../services/timetable_service.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/models/class_model.dart';
 import '../widgets/class_screen_dialog/add_edit_class_dialog.dart';
 import '../widgets/class_screen_dialog/bulk_import_dialog.dart';
@@ -13,6 +15,7 @@ import '../widgets/class_screen_dialog/rollover_dialog.dart';
 import '../widgets/class_screen_dialog/confirm_bulk_delete_dialog.dart';
 import '../widgets/class_screen_dialog/update_student_count_dialog.dart';
 import '../widgets/class_screen_dialog/class_details_dialog.dart';
+import '../widgets/timetable_screen_dialog/create_class_timetable_dialog.dart';
 
 class ClassScreen extends StatefulWidget {
   final String baseUrl;
@@ -70,7 +73,7 @@ class _ClassScreenState extends State<ClassScreen> {
         isActive: filterActive,
       );
       items = ClassModel.listFromPaginated(res);
-      total = (res['total'] ?? items.length) as int;
+      total = (res is Map && res['total'] is int) ? res['total'] as int : items.length;
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -216,27 +219,83 @@ class _ClassScreenState extends State<ClassScreen> {
   Future<void> _showDetails(ClassModel m) async {
     await showDialog<void>(
       context: context,
-      builder: (_) =>
-          ClassDetailsDialog(model: m, fetch: () => api.getById(m.id)),
+      builder: (_) => ClassDetailsDialog(model: m, fetch: () => api.getById(m.id)),
+    );
+  }
+
+  // NEW: Create Class Timetable for the selected class
+  Future<void> _createClassTimetableForSelected() async {
+    if (selectedIds.length != 1) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Select exactly one class')));
+      return;
+    }
+    final selectedClassId = selectedIds.first;
+    final selectedClass = items.where((c) => c.id == selectedClassId).isNotEmpty
+        ? items.firstWhere((c) => c.id == selectedClassId)
+        : null;
+
+    // TODO: Provide a valid master timetable id from your app state or a picker
+    final masterId = await _askMasterId();
+    if (masterId == null || masterId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Master timetable is required')));
+      return;
+    }
+
+    final timetableApi = TimetableService(widget.baseUrl);
+    final classApi = ClassApi(baseUrl: widget.baseUrl, defaultHeaders: {'Accept':'application/json', ...widget.headers});
+
+    // Optionally pass the selected class id to preselect/lock the dropdown
+    final res = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => CreateClassTimetableDialog(
+        tenantId: widget.tenantId,
+        userId: (widget.headers['x-user-id'] ?? widget.headers['userId'] ?? 'system'),
+        masterId: masterId,
+        academicYear: selectedClass?.academicYear.isNotEmpty == true
+            ? selectedClass!.academicYear
+            : (filterYear ?? ''),
+        api: timetableApi,
+        classApi: classApi,
+      ),
+    );
+
+    if (res != null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Class timetable created')));
+    }
+  }
+
+  // Simple input dialog to capture master id; replace with a real master picker if available
+  Future<String?> _askMasterId() async {
+    String temp = '';
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Enter Master Timetable ID'),
+        content: TextField(
+          onChanged: (v) => temp = v.trim(),
+          decoration: const InputDecoration(hintText: 'master_timetable_id'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(onPressed: () => Navigator.pop(ctx, temp), child: const Text('Use')),
+        ],
+      ),
     );
   }
 
   Widget _filters(BuildContext context) {
     return Card(
       elevation: 1,
-      shape:
-          const RoundedRectangleBorder(borderRadius: AppTheme.borderRadius12),
+      shape: const RoundedRectangleBorder(borderRadius: AppTheme.borderRadius12),
       child: Padding(
-        padding:
-            EdgeInsets.all(context.responsive(ResponsiveSize.cardPadding)),
+        padding: EdgeInsets.all(context.responsive(ResponsiveSize.cardPadding)),
         child: Column(
           children: [
             Row(
               children: [
                 Flexible(
                   child: TextField(
-                    decoration: const InputDecoration(
-                        labelText: 'Academic Year', hintText: '2025-26'),
+                    decoration: const InputDecoration(labelText: 'Academic Year', hintText: '2025-26'),
                     onChanged: (v) => filterYear = v.isEmpty ? null : v,
                   ),
                 ),
@@ -253,8 +312,7 @@ class _ClassScreenState extends State<ClassScreen> {
                   child: TextField(
                     decoration: const InputDecoration(labelText: 'Grade'),
                     keyboardType: TextInputType.number,
-                    onChanged: (v) =>
-                        filterGrade = v.isEmpty ? null : int.tryParse(v),
+                    onChanged: (v) => filterGrade = v.isEmpty ? null : int.tryParse(v),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -271,10 +329,7 @@ class _ClassScreenState extends State<ClassScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _resetAndReload,
-                  child: const Text('Apply'),
-                ),
+                ElevatedButton(onPressed: _resetAndReload, child: const Text('Apply')),
                 const SizedBox(width: 6),
                 TextButton(
                   onPressed: () {
@@ -314,29 +369,24 @@ class _ClassScreenState extends State<ClassScreen> {
           label: const Text('Rollover'),
           onPressed: _rollover,
         ),
+        const SizedBox(width: 8),
+        // NEW: Create Class Timetable
+        OutlinedButton.icon(
+          icon: const Icon(Icons.schedule),
+          label: const Text('Create Class Timetable'),
+          onPressed: selectedIds.length == 1 ? _createClassTimetableForSelected : null,
+        ),
         const Spacer(),
         if (selectedIds.isNotEmpty) ...[
           Text('${selectedIds.length} selected'),
           const SizedBox(width: 8),
-          OutlinedButton(
-            onPressed: _bulkCapacity,
-            child: const Text('Update Capacity'),
-          ),
+          OutlinedButton(onPressed: _bulkCapacity, child: const Text('Update Capacity')),
           const SizedBox(width: 8),
-          OutlinedButton(
-            onPressed: _assignClassrooms,
-            child: const Text('Assign Classrooms'),
-          ),
+          OutlinedButton(onPressed: _assignClassrooms, child: const Text('Assign Classrooms')),
           const SizedBox(width: 8),
-          OutlinedButton(
-            onPressed: _bulkStatus,
-            child: const Text('Toggle Status'),
-          ),
+          OutlinedButton(onPressed: _bulkStatus, child: const Text('Toggle Status')),
           const SizedBox(width: 8),
-          TextButton(
-            onPressed: _bulkDelete,
-            child: const Text('Delete'),
-          ),
+          TextButton(onPressed: _bulkDelete, child: const Text('Delete')),
         ],
       ],
     );
@@ -364,22 +414,10 @@ class _ClassScreenState extends State<ClassScreen> {
         DataCell(Text(m.isActive ? 'Active' : 'Inactive')),
         DataCell(Row(
           children: [
-            IconButton(
-              icon: const Icon(Icons.visibility),
-              onPressed: () => _showDetails(m),
-            ),
-            IconButton(
-              icon: const Icon(Icons.group),
-              onPressed: () => _updateCount(m),
-            ),
-            IconButton(
-              icon: const Icon(Icons.edit),
-              onPressed: () => _createOrEdit(m),
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: () => _delete(m.id),
-            ),
+            IconButton(icon: const Icon(Icons.visibility), onPressed: () => _showDetails(m)),
+            IconButton(icon: const Icon(Icons.group), onPressed: () => _updateCount(m)),
+            IconButton(icon: const Icon(Icons.edit), onPressed: () => _createOrEdit(m)),
+            IconButton(icon: const Icon(Icons.delete), onPressed: () => _delete(m.id)),
           ],
         )),
       ],
@@ -392,9 +430,7 @@ class _ClassScreenState extends State<ClassScreen> {
       resizeToAvoidBottomInset: false, // web stability
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final h = constraints.hasBoundedHeight
-              ? constraints.maxHeight
-              : MediaQuery.of(context).size.height;
+          final h = constraints.hasBoundedHeight ? constraints.maxHeight : MediaQuery.of(context).size.height;
           return SizedBox(
             height: h,
             child: Container(
@@ -405,20 +441,12 @@ class _ClassScreenState extends State<ClassScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Classes',
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineLarge!
-                            .copyWith(color: Colors.white),
-                      ),
+                      Text('Classes', style: Theme.of(context).textTheme.headlineLarge!.copyWith(color: Colors.white)),
                       const SizedBox(height: 12),
                       Expanded(
                         child: Card(
                           child: Padding(
-                            padding: EdgeInsets.all(
-                              context.responsive(ResponsiveSize.cardPadding),
-                            ),
+                            padding: EdgeInsets.all(context.responsive(ResponsiveSize.cardPadding)),
                             child: Column(
                               children: [
                                 _toolbar(context),
@@ -430,8 +458,7 @@ class _ClassScreenState extends State<ClassScreen> {
                                   child: SingleChildScrollView(
                                     scrollDirection: Axis.horizontal,
                                     child: ConstrainedBox(
-                                      constraints:
-                                          const BoxConstraints(minWidth: 600),
+                                      constraints: const BoxConstraints(minWidth: 600),
                                       child: SingleChildScrollView(
                                         scrollDirection: Axis.vertical,
                                         child: DataTable(

@@ -51,4 +51,5 @@ class AppConstants {
   static const String adminSendNotificationRoute = '/admin/send-notification';
   static const String adminNotificationAnalyticsRoute = '/admin/notification-analytics';
   static const String adminTenantManagementRoute = '/admin/tenant-management';
+  static const String adminAttendanceRoute = '/school_authority/attendance';
 }

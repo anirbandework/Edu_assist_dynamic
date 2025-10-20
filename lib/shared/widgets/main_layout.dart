@@ -6,6 +6,7 @@ import '../../core/constants/app_theme.dart';
 import '../../core/utils/responsive.dart';
 import 'navigation_header.dart';
 import 'navigation_sidebar.dart';
+import '../../core/utils/school_authority_session.dart';
 
 class MainLayout extends StatefulWidget {
   final Widget child;
@@ -19,7 +20,7 @@ class MainLayout extends StatefulWidget {
   final List<Widget>? headerActions;
   final Color? backgroundColor;
   final bool isScrollable;
-  
+
   const MainLayout({
     super.key,
     required this.child,
@@ -39,7 +40,7 @@ class MainLayout extends StatefulWidget {
   State<MainLayout> createState() => _MainLayoutState();
 }
 
-class _MainLayoutState extends State<MainLayout> 
+class _MainLayoutState extends State<MainLayout>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   bool _isSidebarOpen = false;
   bool _isInitialized = false;
@@ -47,23 +48,41 @@ class _MainLayoutState extends State<MainLayout>
   late Animation<double> _overlayAnimation;
   int _notificationCount = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _setupAnimations();
-    _loadInitialData();
-    
-    // Set initial sidebar state after first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !_isInitialized) {
-        setState(() {
-          _isSidebarOpen = context.screenWidth > ResponsiveHelper.tabletBreakpoint;
-          _isInitialized = true;
-        });
+@override
+void initState() {
+  super.initState();
+  WidgetsBinding.instance.addObserver(this);
+  _setupAnimations();
+  _loadInitialData();
+
+  // After first frame: hydrate session from route and set initial sidebar state
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    // 1) Hydrate AuthoritySession from current route query params if missing
+    try {
+      final uri = GoRouterState.of(context).uri;
+      final userId = uri.queryParameters['userId'];
+      final tenantId = uri.queryParameters['tenantId'];
+      if ((AuthoritySession.authorityId ?? '').isEmpty &&
+          userId != null && userId.isNotEmpty &&
+          tenantId != null && tenantId.isNotEmpty) {
+        AuthoritySession.setSession(authorityId: userId, tenantId: tenantId);
       }
-    });
-  }
+      // If you also use SchoolSession for display purposes, set it here too:
+      // SchoolSession.schoolName ??= uri.queryParameters['schoolName'];
+    } catch (_) {
+      // no-op: guard against contexts where GoRouterState isn't available yet
+    }
+
+    // 2) Initial sidebar open/close based on breakpoint
+    if (mounted && !_isInitialized) {
+      setState(() {
+        _isSidebarOpen = context.screenWidth > ResponsiveHelper.tabletBreakpoint;
+        _isInitialized = true;
+      });
+    }
+  });
+}
+
 
   @override
   void dispose() {
@@ -78,7 +97,8 @@ class _MainLayoutState extends State<MainLayout>
     // Handle screen size changes (rotation, window resize)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _isInitialized) {
-        final shouldBeOpen = context.screenWidth > ResponsiveHelper.tabletBreakpoint;
+        final shouldBeOpen =
+            context.screenWidth > ResponsiveHelper.tabletBreakpoint;
         if (_isSidebarOpen != shouldBeOpen) {
           setState(() {
             _isSidebarOpen = shouldBeOpen;
@@ -93,22 +113,21 @@ class _MainLayoutState extends State<MainLayout>
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    
-    _overlayAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _overlayController,
-      curve: Curves.easeOut,
-    ));
+
+    _overlayAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _overlayController, curve: Curves.easeOut),
+    );
   }
 
   Future<void> _loadInitialData() async {
     // Load notification count and other initial data
     try {
-      final count = widget.userRole == 'student' ? 5 : 
-                   widget.userRole == 'teacher' ? 3 : 2;
-      
+      final count = widget.userRole == 'student'
+          ? 5
+          : widget.userRole == 'teacher'
+          ? 3
+          : 2;
+
       if (mounted) {
         setState(() {
           _notificationCount = count;
@@ -123,7 +142,7 @@ class _MainLayoutState extends State<MainLayout>
     setState(() {
       _isSidebarOpen = !_isSidebarOpen;
     });
-    
+
     // Handle overlay animation for mobile
     if (context.isMobile) {
       if (_isSidebarOpen) {
@@ -139,7 +158,7 @@ class _MainLayoutState extends State<MainLayout>
       setState(() {
         _isSidebarOpen = false;
       });
-      
+
       if (context.isMobile) {
         _overlayController.reverse();
       }
@@ -164,8 +183,9 @@ class _MainLayoutState extends State<MainLayout>
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final sidebarWidth = context.isMobile ? 240.0 : 260.0;
-    final backgroundColor = widget.backgroundColor ?? AppTheme.backgroundPrimary;
-    
+    final backgroundColor =
+        widget.backgroundColor ?? AppTheme.backgroundPrimary;
+
     return Material(
       color: backgroundColor,
       child: SafeArea(
@@ -184,11 +204,11 @@ class _MainLayoutState extends State<MainLayout>
                 schoolName: widget.schoolName,
                 notificationCount: _notificationCount,
               ),
-              
+
               // Micro Breadcrumbs Section
               if (widget.showBreadcrumbs && widget.breadcrumbs != null)
                 _buildMicroBreadcrumbs(),
-              
+
               // Main Content Area
               Expanded(
                 child: Stack(
@@ -197,21 +217,23 @@ class _MainLayoutState extends State<MainLayout>
                     AnimatedPositioned(
                       duration: const Duration(milliseconds: 200),
                       curve: Curves.easeOut,
-                      left: _isSidebarOpen && !context.isMobile ? sidebarWidth : 0,
+                      left: _isSidebarOpen && !context.isMobile
+                          ? sidebarWidth
+                          : 0,
                       right: 0,
                       top: 0,
                       bottom: 0,
                       child: Container(
                         decoration: BoxDecoration(
                           color: backgroundColor,
-                          boxShadow: _isSidebarOpen && !context.isMobile 
+                          boxShadow: _isSidebarOpen && !context.isMobile
                               ? [AppTheme.microShadow]
                               : null,
                         ),
                         child: _buildConstrainedContent(),
                       ),
                     ),
-                    
+
                     // Mobile Overlay
                     if (_isSidebarOpen && context.isMobile)
                       AnimatedBuilder(
@@ -227,7 +249,7 @@ class _MainLayoutState extends State<MainLayout>
                           );
                         },
                       ),
-                    
+
                     // Ultra-Compact Sidebar
                     NavigationSidebar(
                       isOpen: _isSidebarOpen,
@@ -237,7 +259,7 @@ class _MainLayoutState extends State<MainLayout>
                       onClose: _closeSidebar,
                       onLogout: _handleLogout,
                     ),
-                    
+
                     // Micro FAB (Mobile)
                     if (context.isMobile && !_isSidebarOpen && _shouldShowFAB())
                       _buildMicroFAB(),
@@ -264,11 +286,7 @@ class _MainLayoutState extends State<MainLayout>
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.home,
-            size: 12,
-            color: AppTheme.greenPrimary,
-          ),
+          Icon(Icons.home, size: 12, color: AppTheme.greenPrimary),
           const SizedBox(width: 4),
           Expanded(
             child: ListView.builder(
@@ -277,15 +295,19 @@ class _MainLayoutState extends State<MainLayout>
               itemBuilder: (context, index) {
                 final breadcrumb = widget.breadcrumbs![index];
                 final isLast = index == widget.breadcrumbs!.length - 1;
-                
+
                 return Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       breadcrumb,
                       style: AppTheme.bodyMicro.copyWith(
-                        color: isLast ? AppTheme.greenPrimary : AppTheme.neutral600,
-                        fontWeight: isLast ? FontWeight.w600 : FontWeight.normal,
+                        color: isLast
+                            ? AppTheme.greenPrimary
+                            : AppTheme.neutral600,
+                        fontWeight: isLast
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                       ),
                     ),
                     if (!isLast) ...[
@@ -308,25 +330,26 @@ class _MainLayoutState extends State<MainLayout>
     );
   }
 
-Widget _buildConstrainedContent() {
-  final screenHeight = MediaQuery.of(context).size.height;
-  final safe = MediaQuery.of(context).padding.top + MediaQuery.of(context).padding.bottom;
-  final headerH = 48;
-  final crumbH = widget.showBreadcrumbs && widget.breadcrumbs != null ? 28 : 0;
-  final availableHeight = screenHeight - safe - headerH - crumbH;
+  Widget _buildConstrainedContent() {
+    // final screenHeight = MediaQuery.of(context).size.height;
+    // final safe =
+    //     MediaQuery.of(context).padding.top +
+    //     MediaQuery.of(context).padding.bottom;
+    // final headerH = 48;
+    // final crumbH = widget.showBreadcrumbs && widget.breadcrumbs != null
+    //     ? 28
+    //     : 0;
+    // final availableHeight = screenHeight - safe - headerH - crumbH;
 
-  return FocusTraversalGroup( // avoids _RenderTheater focus before layout
+    return FocusTraversalGroup(
     child: CustomScrollView(
-      primary: false, // don't auto-attach focus/scroll controller
+      primary: false,
       slivers: [
         SliverPadding(
           padding: const EdgeInsets.all(8),
           sliver: SliverFillRemaining(
             hasScrollBody: true,
-            child: SizedBox(
-              height: availableHeight,
-              child: widget.child,
-            ),
+            child: widget.child,
           ),
         ),
       ],
@@ -334,11 +357,13 @@ Widget _buildConstrainedContent() {
   );
 }
 
-
-
   bool _shouldShowFAB() {
     // Show floating menu button based on user role
-    return ['admin', 'teacher', 'school_authority'].contains(widget.userRole.toLowerCase());
+    return [
+      'admin',
+      'teacher',
+      'school_authority',
+    ].contains(widget.userRole.toLowerCase());
   }
 
   Widget _buildMicroFAB() {
@@ -395,35 +420,27 @@ Widget _buildConstrainedContent() {
                 color: AppTheme.error.withOpacity(0.1),
                 borderRadius: AppTheme.borderRadius8,
               ),
-              child: Icon(
-                Icons.logout,
-                size: 24,
-                color: AppTheme.error,
-              ),
+              child: Icon(Icons.logout, size: 24, color: AppTheme.error),
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             Text(
               'Confirm Logout',
-              style: AppTheme.headingSmall.copyWith(
-                color: AppTheme.neutral900,
-              ),
+              style: AppTheme.headingSmall.copyWith(color: AppTheme.neutral900),
               textAlign: TextAlign.center,
             ),
-            
+
             const SizedBox(height: 6),
-            
+
             Text(
               'Are you sure you want to logout? You will need to sign in again to access your account.',
-              style: AppTheme.bodyMicro.copyWith(
-                color: AppTheme.neutral600,
-              ),
+              style: AppTheme.bodyMicro.copyWith(color: AppTheme.neutral600),
               textAlign: TextAlign.center,
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             Row(
               children: [
                 Expanded(
@@ -623,7 +640,7 @@ class MicroMainLayout extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Content
             Expanded(
               child: Container(

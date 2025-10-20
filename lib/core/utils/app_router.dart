@@ -19,6 +19,9 @@ import '../../features/admin/screens/admin_dashboard_screen.dart';
 import '../../features/admin/screens/send_notification_screen.dart';
 import '../../features/admin/screens/class_screen.dart';
 import '../../features/admin/screens/student_management_screen.dart';
+import '../../features/admin/screens/timetable_screen.dart';
+import '../../features/admin/screens/attendance_screen.dart';
+import '../../services/attendance_service.dart';
 
 import '../constants/app_constants.dart';
 
@@ -145,6 +148,15 @@ final GoRouter appRouter = GoRouter(
           ),
         ),
 
+        GoRoute(
+          path: AppConstants.adminAttendanceRoute,
+          builder: (context, state) => AttendanceScreen(
+            service: AttendanceService(AppConstants.apiBaseUrl),
+            tenantId: state.uri.queryParameters['tenantId'] ?? '',
+            authorityUserId: state.uri.queryParameters['userId'] ?? '',
+          ),
+        ),
+
         // Student management
         GoRoute(
           path: '/school_authority/students',
@@ -161,6 +173,16 @@ final GoRouter appRouter = GoRouter(
               // Example: inject auth header if present in app state
               // 'Authorization': 'Bearer ${someToken}',
             },
+          ),
+        ),
+        GoRoute(
+          path: '/school_authority/timetable',
+          builder: (context, state) => TimetableScreen(
+            baseUrl: AppConstants.apiBaseUrl,
+            tenantId: state.uri.queryParameters['tenantId'] ?? '',
+            currentUserId: state.uri.queryParameters['userId'] ?? '',
+            academicYear:
+                state.uri.queryParameters['academicYear'] ?? '2025-26',
           ),
         ),
 
@@ -203,8 +225,10 @@ class _PlaceholderScreen extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.indigo[600],
                 foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
               ),
               child: const Text('Go Home'),
             ),

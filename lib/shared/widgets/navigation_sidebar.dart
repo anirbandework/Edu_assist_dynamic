@@ -69,13 +69,10 @@ class _NavigationSidebarState extends State<NavigationSidebar>
       vsync: this,
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(-1.0, 0.0),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(-1.0, 0.0), end: Offset.zero).animate(
+          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+        );
 
     if (widget.isOpen) {
       _animationController.forward();
@@ -111,8 +108,8 @@ class _NavigationSidebarState extends State<NavigationSidebar>
         final count = widget.userRole == 'student'
             ? 5
             : widget.userRole == 'teacher'
-                ? 3
-                : 2;
+            ? 3
+            : 2;
 
         if (mounted) {
           setState(() {
@@ -169,190 +166,235 @@ class _NavigationSidebarState extends State<NavigationSidebar>
       case 'student':
         return [
           NavigationItem(
-              id: 'dashboard',
-              label: 'Dashboard',
-              icon: Icons.dashboard,
-              path: AppConstants.studentDashboardRoute),
+            id: 'dashboard',
+            label: 'Dashboard',
+            icon: Icons.dashboard,
+            path: AppConstants.studentDashboardRoute,
+          ),
           NavigationItem(
-              id: 'notifications',
-              label: 'Notifications',
-              icon: Icons.notifications,
-              path: AppConstants.studentNotificationsRoute,
-              badge: _unreadNotificationsCount > 0
-                  ? _unreadNotificationsCount.toString()
-                  : null,
-              badgeColor: AppTheme.error),
+            id: 'notifications',
+            label: 'Notifications',
+            icon: Icons.notifications,
+            path: AppConstants.studentNotificationsRoute,
+            badge: _unreadNotificationsCount > 0
+                ? _unreadNotificationsCount.toString()
+                : null,
+            badgeColor: AppTheme.error,
+          ),
           NavigationItem(
-              id: 'assignments',
-              label: 'Assignments',
-              icon: Icons.assignment,
-              path: AppConstants.studentAssignmentsRoute,
-              badge: '3',
-              badgeColor: AppTheme.warning),
+            id: 'assignments',
+            label: 'Assignments',
+            icon: Icons.assignment,
+            path: AppConstants.studentAssignmentsRoute,
+            badge: '3',
+            badgeColor: AppTheme.warning,
+          ),
           NavigationItem(
-              id: 'grades',
-              label: 'Grades',
-              icon: Icons.grade,
-              path: AppConstants.studentGradesRoute),
+            id: 'grades',
+            label: 'Grades',
+            icon: Icons.grade,
+            path: AppConstants.studentGradesRoute,
+          ),
           NavigationItem(
-              id: 'attendance',
-              label: 'Attendance',
-              icon: Icons.calendar_today,
-              path: AppConstants.studentAttendanceRoute),
+            id: 'attendance',
+            label: 'Attendance',
+            icon: Icons.calendar_today,
+            path: AppConstants.studentAttendanceRoute,
+          ),
           NavigationItem(
-              id: 'timetable',
-              label: 'Timetable',
-              icon: Icons.schedule,
-              path: AppConstants.studentTimetableRoute),
+            id: 'timetable',
+            label: 'Timetable',
+            icon: Icons.schedule,
+            path: AppConstants.studentTimetableRoute,
+          ),
           NavigationItem(
-              id: 'profile',
-              label: 'Profile',
-              icon: Icons.person,
-              path: AppConstants.studentProfileRoute),
+            id: 'profile',
+            label: 'Profile',
+            icon: Icons.person,
+            path: AppConstants.studentProfileRoute,
+          ),
         ];
 
       case 'teacher':
         return [
           NavigationItem(
-              id: 'dashboard',
-              label: 'Dashboard',
-              icon: Icons.dashboard,
-              path: AppConstants.teacherDashboardRoute),
+            id: 'dashboard',
+            label: 'Dashboard',
+            icon: Icons.dashboard,
+            path: AppConstants.teacherDashboardRoute,
+          ),
           NavigationItem(
-              id: 'notifications',
-              label: 'Notifications',
-              icon: Icons.notifications,
-              path: AppConstants.teacherNotificationsRoute,
-              badge: _unreadNotificationsCount > 0
-                  ? _unreadNotificationsCount.toString()
-                  : null,
-              badgeColor: AppTheme.error),
+            id: 'notifications',
+            label: 'Notifications',
+            icon: Icons.notifications,
+            path: AppConstants.teacherNotificationsRoute,
+            badge: _unreadNotificationsCount > 0
+                ? _unreadNotificationsCount.toString()
+                : null,
+            badgeColor: AppTheme.error,
+          ),
           NavigationItem(
-              id: 'send-notification',
-              label: 'Send Message',
-              icon: Icons.send,
-              path: AppConstants.teacherSendNotificationRoute),
+            id: 'send-notification',
+            label: 'Send Message',
+            icon: Icons.send,
+            path: AppConstants.teacherSendNotificationRoute,
+          ),
           NavigationItem(
-              id: 'classes',
-              label: 'Classes',
-              icon: Icons.class_,
-              path: AppConstants.teacherClassesRoute),
+            id: 'classes',
+            label: 'Classes',
+            icon: Icons.class_,
+            path: AppConstants.teacherClassesRoute,
+          ),
           NavigationItem(
-              id: 'students',
-              label: 'Students',
-              icon: Icons.people,
-              path: AppConstants.teacherStudentsRoute),
+            id: 'students',
+            label: 'Students',
+            icon: Icons.people,
+            path: AppConstants.teacherStudentsRoute,
+          ),
           NavigationItem(
-              id: 'assignments',
-              label: 'Assignments',
-              icon: Icons.assignment,
-              path: AppConstants.teacherAssignmentsRoute),
+            id: 'assignments',
+            label: 'Assignments',
+            icon: Icons.assignment,
+            path: AppConstants.teacherAssignmentsRoute,
+          ),
           NavigationItem(
-              id: 'attendance',
-              label: 'Attendance',
-              icon: Icons.how_to_reg,
-              path: AppConstants.teacherAttendanceRoute),
+            id: 'attendance',
+            label: 'Attendance',
+            icon: Icons.how_to_reg,
+            path: AppConstants.teacherAttendanceRoute,
+          ),
           NavigationItem(
-              id: 'grades',
-              label: 'Grades',
-              icon: Icons.grade,
-              path: AppConstants.teacherGradesRoute),
+            id: 'grades',
+            label: 'Grades',
+            icon: Icons.grade,
+            path: AppConstants.teacherGradesRoute,
+          ),
           NavigationItem(
-              id: 'reports',
-              label: 'Reports',
-              icon: Icons.analytics,
-              path: AppConstants.teacherReportsRoute),
+            id: 'reports',
+            label: 'Reports',
+            icon: Icons.analytics,
+            path: AppConstants.teacherReportsRoute,
+          ),
           NavigationItem(
-              id: 'profile',
-              label: 'Profile',
-              icon: Icons.person,
-              path: AppConstants.teacherProfileRoute),
+            id: 'profile',
+            label: 'Profile',
+            icon: Icons.person,
+            path: AppConstants.teacherProfileRoute,
+          ),
         ];
 
       case 'admin':
       case 'school_authority':
         return [
           NavigationItem(
-              id: 'dashboard',
-              label: 'Dashboard',
-              icon: Icons.dashboard,
-              path: AppConstants.adminDashboardRoute),
+            id: 'dashboard',
+            label: 'Dashboard',
+            icon: Icons.dashboard,
+            path: AppConstants.adminDashboardRoute,
+          ),
           NavigationItem(
-              id: 'notifications',
-              label: 'Notifications',
-              icon: Icons.notifications,
-              path: AppConstants.adminNotificationsRoute,
-              badge: _unreadNotificationsCount > 0
-                  ? _unreadNotificationsCount.toString()
-                  : null,
-              badgeColor: AppTheme.error),
+            id: 'notifications',
+            label: 'Notifications',
+            icon: Icons.notifications,
+            path: AppConstants.adminNotificationsRoute,
+            badge: _unreadNotificationsCount > 0
+                ? _unreadNotificationsCount.toString()
+                : null,
+            badgeColor: AppTheme.error,
+          ),
           NavigationItem(
-              id: 'send-notification',
-              label: 'Send Message',
-              icon: Icons.send,
-              path: AppConstants.adminSendNotificationRoute),
+            id: 'send-notification',
+            label: 'Send Message',
+            icon: Icons.send,
+            path: AppConstants.adminSendNotificationRoute,
+          ),
           // NEW: Classes management for school authorities
           NavigationItem(
-              id: 'classes',
-              label: 'Classes',
-              icon: Icons.class_,
-              path: '/school_authority/classes'),
+            id: 'classes',
+            label: 'Classes',
+            icon: Icons.class_,
+            path: '/school_authority/classes',
+          ),
           NavigationItem(
-              id: 'notification-analytics',
-              label: 'Analytics',
-              icon: Icons.insights,
-              path: AppConstants.adminNotificationAnalyticsRoute),
+            id: 'notification-analytics',
+            label: 'Analytics',
+            icon: Icons.insights,
+            path: AppConstants.adminNotificationAnalyticsRoute,
+          ),
           NavigationItem(
-              id: 'teachers',
-              label: 'Teachers',
-              icon: Icons.person_2,
-              path: AppConstants.adminTeachersRoute),
+            id: 'teachers',
+            label: 'Teachers',
+            icon: Icons.person_2,
+            path: AppConstants.adminTeachersRoute,
+          ),
           // UPDATED: Student Management link
           NavigationItem(
-              id: 'students',
-              label: 'Students',
-              icon: Icons.people,
-              path: '/school_authority/students'),
+            id: 'students',
+            label: 'Students',
+            icon: Icons.people,
+            path: '/school_authority/students',
+          ),
+
           NavigationItem(
-              id: 'analytics',
-              label: 'Reports',
-              icon: Icons.analytics,
-              path: AppConstants.adminAnalyticsRoute),
+            id: 'attendance',
+            label: 'Attendance',
+            icon: Icons.how_to_reg,
+            path: AppConstants.adminAttendanceRoute, // add this constant
+          ),
           NavigationItem(
-              id: 'reports',
-              label: 'Assessment',
-              icon: Icons.assessment,
-              path: AppConstants.adminReportsRoute),
+            id: 'analytics',
+            label: 'Reports',
+            icon: Icons.analytics,
+            path: AppConstants.adminAnalyticsRoute,
+          ),
           NavigationItem(
-              id: 'settings',
-              label: 'Settings',
-              icon: Icons.settings,
-              path: AppConstants.adminSettingsRoute),
+            id: 'reports',
+            label: 'Assessment',
+            icon: Icons.assessment,
+            path: AppConstants.adminReportsRoute,
+          ),
           NavigationItem(
-              id: 'profile',
-              label: 'Profile',
-              icon: Icons.person,
-              path: AppConstants.adminProfileRoute),
+            id: 'settings',
+            label: 'Settings',
+            icon: Icons.settings,
+            path: AppConstants.adminSettingsRoute,
+          ),
+          NavigationItem(
+            id: 'timetable',
+            label: 'Timetable',
+            icon: Icons.schedule,
+            path: '/school_authority/timetable',
+          ),
+          NavigationItem(
+            id: 'profile',
+            label: 'Profile',
+            icon: Icons.person,
+            path: AppConstants.adminProfileRoute,
+          ),
+          
         ];
 
       case 'global_admin':
       case 'tenant_manager':
         return [
           NavigationItem(
-              id: 'tenant-management',
-              label: 'Tenants',
-              icon: Icons.business,
-              path: AppConstants.tenantManagementRoute),
+            id: 'tenant-management',
+            label: 'Tenants',
+            icon: Icons.business,
+            path: AppConstants.tenantManagementRoute,
+          ),
           NavigationItem(
-              id: 'global-analytics',
-              label: 'Analytics',
-              icon: Icons.analytics,
-              path: AppConstants.globalAnalyticsRoute),
+            id: 'global-analytics',
+            label: 'Analytics',
+            icon: Icons.analytics,
+            path: AppConstants.globalAnalyticsRoute,
+          ),
           NavigationItem(
-              id: 'system-settings',
-              label: 'Settings',
-              icon: Icons.settings,
-              path: AppConstants.systemSettingsRoute),
+            id: 'system-settings',
+            label: 'Settings',
+            icon: Icons.settings,
+            path: AppConstants.systemSettingsRoute,
+          ),
         ];
 
       default:
@@ -459,8 +501,7 @@ class _NavigationSidebarState extends State<NavigationSidebar>
                   Expanded(
                     child: items.isEmpty
                         ? _buildEmptyState(context)
-                        : _buildNavigationList(
-                            context, items, currentLocation),
+                        : _buildNavigationList(context, items, currentLocation),
                   ),
                   _buildUserSection(context),
                 ],
@@ -488,9 +529,7 @@ class _NavigationSidebarState extends State<NavigationSidebar>
         border: Border(
           bottom: BorderSide(color: AppTheme.neutral200.withOpacity(0.5)),
         ),
-        borderRadius: const BorderRadius.only(
-          topRight: Radius.circular(12),
-        ),
+        borderRadius: const BorderRadius.only(topRight: Radius.circular(12)),
       ),
       child: Row(
         children: [
@@ -606,7 +645,10 @@ class _NavigationSidebarState extends State<NavigationSidebar>
   }
 
   Widget _buildNavigationList(
-      BuildContext context, List<NavigationItem> items, String currentLocation) {
+    BuildContext context,
+    List<NavigationItem> items,
+    String currentLocation,
+  ) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 4),
       itemCount: items.length,
@@ -681,16 +723,19 @@ class _NavigationSidebarState extends State<NavigationSidebar>
                       item.label,
                       style: AppTheme.bodyMicro.copyWith(
                         color: isActive ? Colors.white : AppTheme.neutral700,
-                        fontWeight:
-                            isActive ? FontWeight.w600 : FontWeight.w500,
+                        fontWeight: isActive
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   if (item.badge != null)
                     Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 1,
+                      ),
                       decoration: BoxDecoration(
                         color: isActive
                             ? Colors.white.withOpacity(0.3)
@@ -729,25 +774,17 @@ class _NavigationSidebarState extends State<NavigationSidebar>
                 color: AppTheme.neutral100,
                 borderRadius: AppTheme.borderRadius12,
               ),
-              child: Icon(
-                Icons.menu,
-                size: 32,
-                color: AppTheme.neutral400,
-              ),
+              child: Icon(Icons.menu, size: 32, color: AppTheme.neutral400),
             ),
             const SizedBox(height: 12),
             Text(
               'No navigation items',
-              style: AppTheme.labelMedium.copyWith(
-                color: AppTheme.neutral600,
-              ),
+              style: AppTheme.labelMedium.copyWith(color: AppTheme.neutral600),
             ),
             const SizedBox(height: 6),
             Text(
               'No menu items available for your current role.',
-              style: AppTheme.bodyMicro.copyWith(
-                color: AppTheme.neutral500,
-              ),
+              style: AppTheme.bodyMicro.copyWith(color: AppTheme.neutral500),
               textAlign: TextAlign.center,
             ),
           ],
@@ -763,9 +800,7 @@ class _NavigationSidebarState extends State<NavigationSidebar>
         border: Border(
           top: BorderSide(color: AppTheme.neutral200.withOpacity(0.5)),
         ),
-        borderRadius: const BorderRadius.only(
-          bottomRight: Radius.circular(12),
-        ),
+        borderRadius: const BorderRadius.only(bottomRight: Radius.circular(12)),
       ),
       child: Column(
         children: [
@@ -858,7 +893,9 @@ class _NavigationSidebarState extends State<NavigationSidebar>
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 4, vertical: 1),
+                          horizontal: 4,
+                          vertical: 1,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
                           borderRadius: AppTheme.borderRadius8,
@@ -904,11 +941,7 @@ class _NavigationSidebarState extends State<NavigationSidebar>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
-                          Icons.logout,
-                          color: Colors.white,
-                          size: 12,
-                        ),
+                        const Icon(Icons.logout, color: Colors.white, size: 12),
                         if (!context.isMobile) ...[
                           const SizedBox(width: 4),
                           Text(
